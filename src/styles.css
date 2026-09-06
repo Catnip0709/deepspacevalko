@@ -426,18 +426,6 @@ button {
   outline-offset: 4px;
 }
 
-.home-indicator {
-  position: absolute;
-  z-index: 8;
-  left: 50%;
-  bottom: 10px;
-  width: 132px;
-  height: 5px;
-  border-radius: 999px;
-  background: rgba(31, 61, 43, 0.72);
-  transform: translateX(-50%);
-}
-
 .wechat-shell {
   position: absolute;
   z-index: 4;
@@ -1062,6 +1050,12 @@ button {
   border-color: rgba(63, 125, 74, 0.34);
 }
 
+.settings-form input:disabled {
+  color: rgba(31, 61, 43, 0.46);
+  background: rgba(255, 255, 255, 0.46);
+  cursor: not-allowed;
+}
+
 .model-picker {
   min-width: 0;
   display: grid;
@@ -1127,11 +1121,39 @@ button {
   cursor: pointer;
 }
 
+.settings-form button:disabled {
+  color: rgba(31, 61, 43, 0.42);
+  background: rgba(255, 255, 255, 0.58);
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
 .settings-saved {
   margin: -2px 0 0;
   color: rgba(31, 61, 43, 0.68);
   font-size: 12px;
   font-weight: 800;
+}
+
+.settings-error {
+  margin: -2px 0 0;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.settings-error {
+  color: #9a3636;
+  font-weight: 800;
+}
+
+.unlock-card .settings-icon {
+  background: rgba(223, 243, 223, 0.78);
+}
+
+.unlock-form {
+  background:
+    radial-gradient(circle at 84% 12%, rgba(255, 247, 232, 0.9), transparent 36%),
+    linear-gradient(135deg, rgba(223, 243, 223, 0.72), rgba(255, 255, 255, 0.68));
 }
 
 .moments-feed {
@@ -1419,10 +1441,6 @@ button {
 
   .dock {
     bottom: calc(28px + env(safe-area-inset-bottom));
-  }
-
-  .home-indicator {
-    bottom: calc(8px + env(safe-area-inset-bottom));
   }
 }
 

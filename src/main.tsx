@@ -2,11 +2,13 @@ import { useEffect, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import {
   ArrowLeft,
+  BadgeCheck,
   Bell,
   Camera,
   ChevronRight,
   ExternalLink,
   KeyRound,
+  LockKeyhole,
   MessageCircle,
   NotebookPen,
   Send,
@@ -17,6 +19,7 @@ import {
   Wifi
 } from 'lucide-react'
 import { aoyinMomentReplies, aoyinPersona } from './config/aoyinPersona'
+import { validateRedemptionCode } from './config/redemptionCodes'
 import { streamDeepSeekCompletion, type DeepSeekChatMessage } from './harness/deepseekClient'
 import './styles.css'
 
@@ -117,6 +120,8 @@ const initialMoments: Moment[] = [
 const apiKeyStorageKey = 'deepseekApiKey'
 const modelStorageKey = 'selectedModel'
 const chatStorageKey = 'chatMessages:aoyin'
+const unlockStorageKey = 'valkophoneUnlocked:v1'
+const unlockCodeHashStorageKey = 'valkophoneUnlockCodeHash:v1'
 const deepSeekModels = ['deepseek-v4-flash', 'deepseek-v4-pro'] as const
 type DeepSeekModel = (typeof deepSeekModels)[number]
 const defaultModel: DeepSeekModel = 'deepseek-v4-flash'
@@ -169,6 +174,10 @@ function readLocalStorage(key: string, fallback = '') {
   }
 }
 
+function readStoredBoolean(key: string) {
+  return readLocalStorage(key) === 'true'
+}
+
 function normalizeDeepSeekModel(model: string): DeepSeekModel {
   return deepSeekModels.includes(model as DeepSeekModel) ? (model as DeepSeekModel) : defaultModel
 }
@@ -216,6 +225,7 @@ function App() {
   const [moments, setMoments] = useState<Moment[]>(initialMoments)
   const [isNoteOpen, setIsNoteOpen] = useState(false)
   const [apiKey, setApiKey] = useState(() => readLocalStorage(apiKeyStorageKey))
+  const [isUnlocked, setIsUnlocked] = useState(() => readStoredBoolean(unlockStorageKey))
   const [selectedModel, setSelectedModel] = useState<DeepSeekModel>(() =>
     normalizeDeepSeekModel(readLocalStorage(modelStorageKey, defaultModel))
   )
@@ -235,6 +245,20 @@ function App() {
     setSelectedModel(trimmedModel)
     window.localStorage.setItem(apiKeyStorageKey, trimmedApiKey)
     window.localStorage.setItem(modelStorageKey, trimmedModel)
+  }
+
+  const redeemCode = async (code: string) => {
+    const result = await validateRedemptionCode(code)
+
+    if (!result) {
+      return false
+    }
+
+    setIsUnlocked(true)
+    window.localStorage.setItem(unlockStorageKey, 'true')
+    window.localStorage.setItem(unlockCodeHashStorageKey, result.codeHash)
+
+    return true
   }
 
   const sendChatMessage = async (text: string) => {
@@ -349,6 +373,11 @@ function App() {
   }
 
   const openWechat = () => {
+    if (!isUnlocked) {
+      setScreen('settings')
+      return
+    }
+
     setScreen('wechat')
     setWechatTab('chats')
     setWechatView('list')
@@ -365,6 +394,12 @@ function App() {
   }
 
   const openHisPhone = () => {
+    if (!isUnlocked) {
+      setScreen('settings')
+      setWechatView('list')
+      return
+    }
+
     setScreen('hisPhone')
     setWechatView('list')
   }
@@ -428,17 +463,17 @@ function App() {
             {screen === 'settings' ? (
               <SettingsApp
                 apiKey={apiKey}
+                isUnlocked={isUnlocked}
                 selectedModel={selectedModel}
                 onBackHome={returnHome}
                 onSave={saveApiKey}
+                onRedeem={redeemCode}
               />
             ) : null}
 
             {screen === 'hisPhone' ? <HisPhoneApp onBackHome={returnHome} /> : null}
 
             {isNoteOpen ? <StickyNoteModal onClose={() => setIsNoteOpen(false)} /> : null}
-
-            <div className="home-indicator" aria-hidden="true" />
           </div>
         </div>
       </section>
@@ -829,19 +864,44 @@ function MomentsFeed({
 
 function SettingsApp({
   apiKey,
+  isUnlocked,
   selectedModel,
   onBackHome,
-  onSave
+  onSave,
+  onRedeem
 }: {
   apiKey: string
+  isUnlocked: boolean
   selectedModel: string
   onBackHome: () => void
   onSave: (apiKey: string, model: string) => void
+  onRedeem: (code: string) => Promise<boolean>
 }) {
+  const [draftCode, setDraftCode] = useState('')
+  const [redeemState, setRedeemState] = useState<'idle' | 'checking' | 'success' | 'error'>('idle')
   const [draftApiKey, setDraftApiKey] = useState(apiKey)
   const [draftModel, setDraftModel] = useState<DeepSeekModel>(normalizeDeepSeekModel(selectedModel || defaultModel))
   const [saved, setSaved] = useState(false)
   const maskedKey = maskApiKey(apiKey)
+
+  const submitRedemptionCode = async (event: { preventDefault: () => void }) => {
+    event.preventDefault()
+
+    if (!draftCode.trim() || redeemState === 'checking' || isUnlocked) {
+      return
+    }
+
+    setRedeemState('checking')
+    const accepted = await onRedeem(draftCode)
+
+    if (accepted) {
+      setDraftCode('')
+      setRedeemState('success')
+      return
+    }
+
+    setRedeemState('error')
+  }
 
   const submitSettings = (event: { preventDefault: () => void }) => {
     event.preventDefault()
@@ -860,6 +920,47 @@ function SettingsApp({
       </header>
 
       <div className="settings-content">
+        <section className="settings-card unlock-card">
+          <div className="settings-icon">
+            {isUnlocked ? <BadgeCheck size={25} strokeWidth={2.3} /> : <LockKeyhole size={25} strokeWidth={2.3} />}
+          </div>
+          <div>
+            <h3>买断解锁</h3>
+            <p>{isUnlocked ? '已解锁。微信和他的手机都可以正常使用。' : '拿到兑换码后在这里输入，解锁会保存在当前浏览器。'}</p>
+          </div>
+        </section>
+
+        <form className="settings-form unlock-form" onSubmit={submitRedemptionCode}>
+          <div className="settings-status-row">
+            <span>解锁状态</span>
+            <strong className={`settings-status-tag ${isUnlocked ? 'connected' : 'empty'}`}>
+              {isUnlocked ? '已买断' : '未解锁'}
+            </strong>
+          </div>
+
+          <label>
+            <span>兑换码</span>
+            <input
+              value={draftCode}
+              onChange={(event) => {
+                setDraftCode(event.target.value)
+                setRedeemState('idle')
+              }}
+              placeholder="VALKO-XXXX-XXXX"
+              autoComplete="off"
+              spellCheck={false}
+              disabled={isUnlocked}
+              aria-label="买断兑换码"
+            />
+          </label>
+
+          <button type="submit" disabled={isUnlocked || !draftCode.trim() || redeemState === 'checking'}>
+            {isUnlocked ? '已解锁' : redeemState === 'checking' ? '校验中...' : '解锁手机'}
+          </button>
+          {redeemState === 'success' ? <p className="settings-saved">兑换成功，已保存到当前浏览器。</p> : null}
+          {redeemState === 'error' ? <p className="settings-error">兑换码不对，检查一下有没有漏字母或空格。</p> : null}
+        </form>
+
         <section className="settings-card">
           <div className="settings-icon">
             <KeyRound size={25} strokeWidth={2.3} />
