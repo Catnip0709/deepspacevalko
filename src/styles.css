@@ -1163,6 +1163,18 @@ button {
   padding-bottom: 118px;
 }
 
+.moment-error {
+  margin: -2px 4px 0;
+  padding: 9px 11px;
+  border: 1px solid rgba(154, 54, 54, 0.16);
+  border-radius: 15px;
+  color: #9a3636;
+  background: rgba(255, 255, 255, 0.62);
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.45;
+}
+
 .moment-composer,
 .moment-card {
   display: grid;
@@ -1344,6 +1356,11 @@ button {
   color: rgba(31, 61, 43, 0.82);
   font-size: 12px;
   line-height: 1.5;
+}
+
+.moment-reply.pending p {
+  color: rgba(31, 61, 43, 0.52);
+  font-style: italic;
 }
 
 .moment-reply strong {

@@ -18,7 +18,7 @@ import {
   Trash2,
   Wifi
 } from 'lucide-react'
-import { aoyinMomentReplies, aoyinPersona } from './config/aoyinPersona'
+import { aoyinPersona } from './config/aoyinPersona'
 import { validateRedemptionCode } from './config/redemptionCodes'
 import { streamDeepSeekCompletion, type DeepSeekChatMessage } from './harness/deepseekClient'
 import './styles.css'
@@ -40,6 +40,7 @@ type MomentReply = {
   id: string
   author: MomentAuthor
   text: string
+  pending?: boolean
 }
 
 type Moment = {
@@ -160,12 +161,6 @@ function createId(prefix: string) {
   return `${prefix}-${Date.now()}-${Math.random().toString(16).slice(2)}`
 }
 
-function createAoyinMomentReply(seed: string) {
-  const index = Array.from(seed).reduce((total, char) => total + char.charCodeAt(0), 0) % aoyinMomentReplies.length
-
-  return aoyinMomentReplies[index]
-}
-
 function readLocalStorage(key: string, fallback = '') {
   try {
     return window.localStorage.getItem(key) ?? fallback
@@ -218,6 +213,39 @@ function buildDeepSeekMessages(chatMessages: ChatMessage[]): DeepSeekChatMessage
   ]
 }
 
+function buildMomentReplyMessages({
+  sourceAuthor,
+  sourceText,
+  hunterComment
+}: {
+  sourceAuthor: MomentAuthor
+  sourceText: string
+  hunterComment?: string
+}): DeepSeekChatMessage[] {
+  const scene =
+    sourceAuthor === 'hunter'
+      ? `猎人小姐刚刚发了一条朋友圈：“${sourceText}”。`
+      : `敖尹之前发了一条朋友圈：“${sourceText}”。猎人小姐评论：“${hunterComment ?? ''}”。`
+
+  return [
+    {
+      role: 'system',
+      content: [
+        aoyinPersona.systemPrompt,
+        '当前场景是微信朋友圈评论区，不是私聊。',
+        '请只生成敖尹对猎人小姐的一条朋友圈回复。',
+        '回复要根据她发的内容或评论内容自然回应，不要泛泛而谈。',
+        '长度控制在 8 到 36 个中文字符之间，像真实朋友圈评论。',
+        '不要加引号，不要写“敖尹：”，不要解释。'
+      ].join('\n')
+    },
+    {
+      role: 'user',
+      content: scene
+    }
+  ]
+}
+
 function App() {
   const [screen, setScreen] = useState<Screen>('desktop')
   const [wechatTab, setWechatTab] = useState<WechatTab>('chats')
@@ -232,6 +260,8 @@ function App() {
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>(readStoredChatMessages)
   const [isChatting, setIsChatting] = useState(false)
   const [chatError, setChatError] = useState('')
+  const [momentError, setMomentError] = useState('')
+  const [replyingMomentIds, setReplyingMomentIds] = useState<string[]>([])
 
   useEffect(() => {
     window.localStorage.setItem(chatStorageKey, JSON.stringify(chatMessages))
@@ -325,28 +355,137 @@ function App() {
     setChatError('')
   }
 
-  const publishMoment = (text: string) => {
-    const replyText = createAoyinMomentReply(text)
+  const generateMomentReply = async ({
+    momentId,
+    replyId,
+    sourceAuthor,
+    sourceText,
+    hunterComment
+  }: {
+    momentId: string
+    replyId: string
+    sourceAuthor: MomentAuthor
+    sourceText: string
+    hunterComment?: string
+  }) => {
+    if (!apiKey) {
+      setMomentError('请先到设置里填写 DeepSeek API Key，敖尹才能回复朋友圈。')
+      setScreen('settings')
+      return
+    }
+
+    setMomentError('')
+    setReplyingMomentIds((current) => [...current, momentId])
+
+    try {
+      let receivedText = ''
+
+      await streamDeepSeekCompletion({
+        apiKey,
+        model: selectedModel,
+        messages: buildMomentReplyMessages({
+          sourceAuthor,
+          sourceText,
+          hunterComment
+        }),
+        onDelta: (delta) => {
+          receivedText += delta
+          setMoments((current) =>
+            current.map((moment) =>
+              moment.id === momentId
+                ? {
+                    ...moment,
+                    replies: moment.replies.map((reply) =>
+                      reply.id === replyId ? { ...reply, text: receivedText, pending: true } : reply
+                    )
+                  }
+                : moment
+            )
+          )
+        }
+      })
+
+      setMoments((current) =>
+        current.map((moment) =>
+          moment.id === momentId
+            ? {
+                ...moment,
+                replies: moment.replies.map((reply) =>
+                  reply.id === replyId
+                    ? {
+                        ...reply,
+                        text: receivedText.trim() || '我看到了，小铃兰。',
+                        pending: false
+                      }
+                    : reply
+                )
+              }
+            : moment
+        )
+      )
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'DeepSeek 请求失败，请稍后再试。'
+      setMomentError(message)
+      setMoments((current) =>
+        current.map((moment) =>
+          moment.id === momentId
+            ? {
+                ...moment,
+                replies: moment.replies.map((reply) =>
+                  reply.id === replyId
+                    ? {
+                        ...reply,
+                        text: `回复没有生成：${message}`,
+                        pending: false
+                      }
+                    : reply
+                )
+              }
+            : moment
+        )
+      )
+    } finally {
+      setReplyingMomentIds((current) => current.filter((id) => id !== momentId))
+    }
+  }
+
+  const publishMoment = async (text: string) => {
+    const momentId = createId('hunter-moment')
+    const replyId = createId('aoyin-reply')
     const newMoment: Moment = {
-      id: createId('hunter-moment'),
+      id: momentId,
       author: 'hunter',
       authorName: '猎人小姐',
       time: getCurrentTime(),
       text,
       replies: [
         {
-          id: createId('aoyin-reply'),
+          id: replyId,
           author: 'aoyin',
-          text: replyText
+          text: apiKey ? '敖尹正在回复...' : '需要先填写 DeepSeek API Key。',
+          pending: Boolean(apiKey)
         }
       ]
     }
 
     setMoments((current) => [newMoment, ...current])
+
+    await generateMomentReply({
+      momentId,
+      replyId,
+      sourceAuthor: 'hunter',
+      sourceText: text
+    })
   }
 
-  const replyToMoment = (momentId: string, text: string) => {
-    const aoyinReply = createAoyinMomentReply(text)
+  const replyToMoment = async (momentId: string, text: string) => {
+    const targetMoment = moments.find((moment) => moment.id === momentId)
+
+    if (!targetMoment) {
+      return
+    }
+
+    const replyId = createId('aoyin-reply')
 
     setMoments((current) =>
       current.map((moment) =>
@@ -361,15 +500,24 @@ function App() {
                   text
                 },
                 {
-                  id: createId('aoyin-reply'),
+                  id: replyId,
                   author: 'aoyin',
-                  text: aoyinReply
+                  text: apiKey ? '敖尹正在回复...' : '需要先填写 DeepSeek API Key。',
+                  pending: Boolean(apiKey)
                 }
               ]
             }
           : moment
       )
     )
+
+    await generateMomentReply({
+      momentId,
+      replyId,
+      sourceAuthor: targetMoment.author,
+      sourceText: targetMoment.text,
+      hunterComment: text
+    })
   }
 
   const openWechat = () => {
@@ -454,6 +602,8 @@ function App() {
                 }}
                 onPublishMoment={publishMoment}
                 onReplyToMoment={replyToMoment}
+                momentError={momentError}
+                replyingMomentIds={replyingMomentIds}
                 onSendChatMessage={sendChatMessage}
                 onClearChat={clearChatMessages}
                 onOpenSettings={openSettings}
@@ -583,6 +733,8 @@ function WechatApp({
   onChangeTab,
   onPublishMoment,
   onReplyToMoment,
+  momentError,
+  replyingMomentIds,
   onSendChatMessage,
   onClearChat,
   onOpenSettings
@@ -598,8 +750,10 @@ function WechatApp({
   onOpenConversation: () => void
   onBackToList: () => void
   onChangeTab: (tab: WechatTab) => void
-  onPublishMoment: (text: string) => void
-  onReplyToMoment: (momentId: string, text: string) => void
+  onPublishMoment: (text: string) => Promise<void>
+  onReplyToMoment: (momentId: string, text: string) => Promise<void>
+  momentError: string
+  replyingMomentIds: string[]
   onSendChatMessage: (text: string) => void
   onClearChat: () => void
   onOpenSettings: () => void
@@ -637,7 +791,13 @@ function WechatApp({
           />
         ) : null}
         {activeTab === 'moments' ? (
-          <MomentsFeed moments={moments} onPublishMoment={onPublishMoment} onReplyToMoment={onReplyToMoment} />
+          <MomentsFeed
+            moments={moments}
+            momentError={momentError}
+            replyingMomentIds={replyingMomentIds}
+            onPublishMoment={onPublishMoment}
+            onReplyToMoment={onReplyToMoment}
+          />
         ) : null}
       </div>
 
@@ -761,17 +921,21 @@ function ConversationShell({
 
 function MomentsFeed({
   moments,
+  momentError,
+  replyingMomentIds,
   onPublishMoment,
   onReplyToMoment
 }: {
   moments: Moment[]
-  onPublishMoment: (text: string) => void
-  onReplyToMoment: (momentId: string, text: string) => void
+  momentError: string
+  replyingMomentIds: string[]
+  onPublishMoment: (text: string) => Promise<void>
+  onReplyToMoment: (momentId: string, text: string) => Promise<void>
 }) {
   const [draft, setDraft] = useState('')
   const [replyDrafts, setReplyDrafts] = useState<Record<string, string>>({})
 
-  const submitMoment = (event: { preventDefault: () => void }) => {
+  const submitMoment = async (event: { preventDefault: () => void }) => {
     event.preventDefault()
     const text = draft.trim()
 
@@ -779,11 +943,11 @@ function MomentsFeed({
       return
     }
 
-    onPublishMoment(text)
+    void onPublishMoment(text)
     setDraft('')
   }
 
-  const submitReply = (event: { preventDefault: () => void }, momentId: string) => {
+  const submitReply = async (event: { preventDefault: () => void }, momentId: string) => {
     event.preventDefault()
     const text = replyDrafts[momentId]?.trim()
 
@@ -791,7 +955,7 @@ function MomentsFeed({
       return
     }
 
-    onReplyToMoment(momentId, text)
+    void onReplyToMoment(momentId, text)
     setReplyDrafts((current) => ({ ...current, [momentId]: '' }))
   }
 
@@ -817,6 +981,7 @@ function MomentsFeed({
           </button>
         </div>
       </form>
+      {momentError ? <p className="moment-error">{momentError}</p> : null}
       {moments.map((item) => (
         <article className="moment-card" key={item.id}>
           {item.author === 'aoyin' ? <AoyinAvatar /> : <HunterAvatar />}
@@ -829,7 +994,7 @@ function MomentsFeed({
             {item.replies.length > 0 ? (
               <div className="moment-replies" aria-label={`${item.authorName}朋友圈回复`}>
                 {item.replies.map((reply) => (
-                  <div className="moment-reply" key={reply.id}>
+                  <div className={`moment-reply ${reply.pending ? 'pending' : ''}`} key={reply.id}>
                     {reply.author === 'aoyin' ? <AoyinMiniAvatar /> : <HunterMiniAvatar />}
                     <p>
                       <strong>{reply.author === 'aoyin' ? '敖尹' : '猎人小姐'}：</strong>
@@ -850,9 +1015,10 @@ function MomentsFeed({
                 }
                 placeholder={item.author === 'aoyin' ? '回复敖尹...' : '补充一句...'}
                 aria-label={`回复${item.authorName}的朋友圈`}
+                disabled={replyingMomentIds.includes(item.id)}
               />
-              <button type="submit" disabled={!replyDrafts[item.id]?.trim()}>
-                回复
+              <button type="submit" disabled={!replyDrafts[item.id]?.trim() || replyingMomentIds.includes(item.id)}>
+                {replyingMomentIds.includes(item.id) ? '等待' : '回复'}
               </button>
             </form>
           </div>
