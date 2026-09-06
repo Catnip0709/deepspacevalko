@@ -1,0 +1,384 @@
+import { useEffect, useState } from 'react'
+import { PhoneFrame } from '../components/PhoneFrame'
+import { Desktop } from '../desktop/Desktop'
+import { StickyNoteModal } from '../desktop/StickyNoteModal'
+import { HisPhoneApp } from '../apps/his-phone/HisPhoneApp'
+import { SettingsApp } from '../apps/settings/SettingsApp'
+import { initialChatMessages } from '../apps/wechat/chatData'
+import { initialMoments } from '../apps/wechat/momentsData'
+import { WechatApp } from '../apps/wechat/WechatApp'
+import { maskRedemptionCode } from './masking'
+import {
+  apiKeyStorageKey,
+  modelStorageKey,
+  unlockCodeHashStorageKey,
+  unlockCodeLabelStorageKey,
+  unlockCodeStorageKey,
+  unlockStorageKey
+} from './storageKeys'
+import { createId, getCurrentTime } from './time'
+import type { ChatMessage, DeepSeekModel, Moment, MomentAuthor, Screen, WechatTab, WechatView } from './types'
+import { validateRedemptionCode } from '../config/redemptionCodes'
+import { normalizeDeepSeekModel } from '../config/deepseekModels'
+import { streamAoyinChatReply, streamAoyinMomentReply } from '../harness/chatHarness'
+import { readStoredChatMessages, writeStoredChatMessages } from '../storage/chatStore'
+import { readLocalStorage, readStoredBoolean, writeLocalStorage } from '../storage/localStorage'
+
+export function App() {
+  const [screen, setScreen] = useState<Screen>('desktop')
+  const [wechatTab, setWechatTab] = useState<WechatTab>('chats')
+  const [wechatView, setWechatView] = useState<WechatView>('list')
+  const [moments, setMoments] = useState<Moment[]>(initialMoments)
+  const [isNoteOpen, setIsNoteOpen] = useState(false)
+  const [apiKey, setApiKey] = useState(() => readLocalStorage(apiKeyStorageKey))
+  const [isUnlocked, setIsUnlocked] = useState(() => readStoredBoolean(unlockStorageKey))
+  const [selectedModel, setSelectedModel] = useState<DeepSeekModel>(() =>
+    normalizeDeepSeekModel(readLocalStorage(modelStorageKey))
+  )
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>(readStoredChatMessages)
+  const [isChatting, setIsChatting] = useState(false)
+  const [chatError, setChatError] = useState('')
+  const [momentError, setMomentError] = useState('')
+  const [replyingMomentIds, setReplyingMomentIds] = useState<string[]>([])
+
+  useEffect(() => {
+    writeStoredChatMessages(chatMessages)
+  }, [chatMessages])
+
+  const saveApiKey = (nextApiKey: string, nextModel: string) => {
+    const trimmedApiKey = nextApiKey.trim()
+    const trimmedModel = normalizeDeepSeekModel(nextModel.trim())
+
+    setApiKey(trimmedApiKey)
+    setSelectedModel(trimmedModel)
+    writeLocalStorage(apiKeyStorageKey, trimmedApiKey)
+    writeLocalStorage(modelStorageKey, trimmedModel)
+  }
+
+  const redeemCode = async (code: string) => {
+    const result = await validateRedemptionCode(code)
+
+    if (!result) {
+      return false
+    }
+
+    setIsUnlocked(true)
+    writeLocalStorage(unlockStorageKey, 'true')
+    writeLocalStorage(unlockCodeStorageKey, result.normalizedCode)
+    writeLocalStorage(unlockCodeHashStorageKey, result.codeHash)
+    writeLocalStorage(unlockCodeLabelStorageKey, maskRedemptionCode(result.normalizedCode))
+
+    return true
+  }
+
+  const sendChatMessage = async (text: string) => {
+    const trimmed = text.trim()
+
+    if (!trimmed || isChatting) {
+      return
+    }
+
+    if (!apiKey) {
+      setChatError('请先到设置里填写 DeepSeek API Key。')
+      setScreen('settings')
+      return
+    }
+
+    const userMessage: ChatMessage = {
+      id: createId('user-message'),
+      role: 'user',
+      content: trimmed,
+      createdAt: getCurrentTime()
+    }
+    const assistantMessage: ChatMessage = {
+      id: createId('assistant-message'),
+      role: 'assistant',
+      content: '',
+      createdAt: getCurrentTime()
+    }
+    const nextMessages = [...chatMessages, userMessage, assistantMessage]
+
+    setChatMessages(nextMessages)
+    setChatError('')
+    setIsChatting(true)
+
+    try {
+      await streamAoyinChatReply({
+        apiKey,
+        model: selectedModel,
+        chatMessages: [...chatMessages, userMessage],
+        onDelta: (delta) => {
+          setChatMessages((current) =>
+            current.map((message) =>
+              message.id === assistantMessage.id ? { ...message, content: message.content + delta } : message
+            )
+          )
+        }
+      })
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'DeepSeek 请求失败，请稍后再试。'
+      setChatError(message)
+      setChatMessages((current) =>
+        current.map((item) =>
+          item.id === assistantMessage.id ? { ...item, content: `消息没有发出去：${message}` } : item
+        )
+      )
+    } finally {
+      setIsChatting(false)
+    }
+  }
+
+  const clearChatMessages = () => {
+    setChatMessages(initialChatMessages)
+    setChatError('')
+  }
+
+  const generateMomentReply = async ({
+    momentId,
+    replyId,
+    sourceAuthor,
+    sourceText,
+    hunterComment
+  }: {
+    momentId: string
+    replyId: string
+    sourceAuthor: MomentAuthor
+    sourceText: string
+    hunterComment?: string
+  }) => {
+    if (!apiKey) {
+      setMomentError('请先到设置里填写 DeepSeek API Key，敖尹才能回复朋友圈。')
+      setScreen('settings')
+      return
+    }
+
+    setMomentError('')
+    setReplyingMomentIds((current) => [...current, momentId])
+
+    try {
+      let receivedText = ''
+
+      await streamAoyinMomentReply({
+        apiKey,
+        model: selectedModel,
+        sourceAuthor,
+        sourceText,
+        hunterComment,
+        onDelta: (delta) => {
+          receivedText += delta
+          setMoments((current) =>
+            current.map((moment) =>
+              moment.id === momentId
+                ? {
+                    ...moment,
+                    replies: moment.replies.map((reply) =>
+                      reply.id === replyId ? { ...reply, text: receivedText, pending: true } : reply
+                    )
+                  }
+                : moment
+            )
+          )
+        }
+      })
+
+      setMoments((current) =>
+        current.map((moment) =>
+          moment.id === momentId
+            ? {
+                ...moment,
+                replies: moment.replies.map((reply) =>
+                  reply.id === replyId
+                    ? {
+                        ...reply,
+                        text: receivedText.trim() || '我看到了，小铃兰。',
+                        pending: false
+                      }
+                    : reply
+                )
+              }
+            : moment
+        )
+      )
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'DeepSeek 请求失败，请稍后再试。'
+      setMomentError(message)
+      setMoments((current) =>
+        current.map((moment) =>
+          moment.id === momentId
+            ? {
+                ...moment,
+                replies: moment.replies.map((reply) =>
+                  reply.id === replyId
+                    ? {
+                        ...reply,
+                        text: `回复没有生成：${message}`,
+                        pending: false
+                      }
+                    : reply
+                )
+              }
+            : moment
+        )
+      )
+    } finally {
+      setReplyingMomentIds((current) => current.filter((id) => id !== momentId))
+    }
+  }
+
+  const publishMoment = async (text: string) => {
+    const momentId = createId('hunter-moment')
+    const replyId = createId('aoyin-reply')
+    const newMoment: Moment = {
+      id: momentId,
+      author: 'hunter',
+      authorName: '猎人小姐',
+      time: getCurrentTime(),
+      text,
+      replies: [
+        {
+          id: replyId,
+          author: 'aoyin',
+          text: apiKey ? '敖尹正在回复...' : '需要先填写 DeepSeek API Key。',
+          pending: Boolean(apiKey)
+        }
+      ]
+    }
+
+    setMoments((current) => [newMoment, ...current])
+
+    await generateMomentReply({
+      momentId,
+      replyId,
+      sourceAuthor: 'hunter',
+      sourceText: text
+    })
+  }
+
+  const replyToMoment = async (momentId: string, text: string) => {
+    const targetMoment = moments.find((moment) => moment.id === momentId)
+
+    if (!targetMoment) {
+      return
+    }
+
+    const replyId = createId('aoyin-reply')
+
+    setMoments((current) =>
+      current.map((moment) =>
+        moment.id === momentId
+          ? {
+              ...moment,
+              replies: [
+                ...moment.replies,
+                {
+                  id: createId('hunter-reply'),
+                  author: 'hunter',
+                  text
+                },
+                {
+                  id: replyId,
+                  author: 'aoyin',
+                  text: apiKey ? '敖尹正在回复...' : '需要先填写 DeepSeek API Key。',
+                  pending: Boolean(apiKey)
+                }
+              ]
+            }
+          : moment
+      )
+    )
+
+    await generateMomentReply({
+      momentId,
+      replyId,
+      sourceAuthor: targetMoment.author,
+      sourceText: targetMoment.text,
+      hunterComment: text
+    })
+  }
+
+  const openWechat = () => {
+    if (!isUnlocked) {
+      setScreen('settings')
+      return
+    }
+
+    setScreen('wechat')
+    setWechatTab('chats')
+    setWechatView('list')
+  }
+
+  const returnHome = () => {
+    setScreen('desktop')
+    setWechatView('list')
+  }
+
+  const openSettings = () => {
+    setScreen('settings')
+    setWechatView('list')
+  }
+
+  const openHisPhone = () => {
+    if (!isUnlocked) {
+      setScreen('settings')
+      setWechatView('list')
+      return
+    }
+
+    setScreen('hisPhone')
+    setWechatView('list')
+  }
+
+  return (
+    <PhoneFrame>
+      {screen === 'desktop' ? (
+        <Desktop
+          openWechat={openWechat}
+          openSettings={openSettings}
+          openHisPhone={openHisPhone}
+          openNote={() => setIsNoteOpen(true)}
+        />
+      ) : null}
+
+      {screen === 'wechat' ? (
+        <WechatApp
+          activeTab={wechatTab}
+          view={wechatView}
+          moments={moments}
+          chatMessages={chatMessages}
+          isChatting={isChatting}
+          chatError={chatError}
+          hasApiKey={Boolean(apiKey)}
+          onBackHome={returnHome}
+          onOpenConversation={() => setWechatView('conversation')}
+          onBackToList={() => setWechatView('list')}
+          onChangeTab={(tab) => {
+            setWechatTab(tab)
+            setWechatView('list')
+          }}
+          onPublishMoment={publishMoment}
+          onReplyToMoment={replyToMoment}
+          momentError={momentError}
+          replyingMomentIds={replyingMomentIds}
+          onSendChatMessage={sendChatMessage}
+          onClearChat={clearChatMessages}
+          onOpenSettings={openSettings}
+        />
+      ) : null}
+
+      {screen === 'settings' ? (
+        <SettingsApp
+          apiKey={apiKey}
+          isUnlocked={isUnlocked}
+          selectedModel={selectedModel}
+          onBackHome={returnHome}
+          onSave={saveApiKey}
+          onRedeem={redeemCode}
+        />
+      ) : null}
+
+      {screen === 'hisPhone' ? <HisPhoneApp onBackHome={returnHome} /> : null}
+
+      {isNoteOpen ? <StickyNoteModal onClose={() => setIsNoteOpen(false)} /> : null}
+    </PhoneFrame>
+  )
+}

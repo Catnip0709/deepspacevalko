@@ -1,0 +1,7 @@
+export const apiKeyStorageKey = 'deepseekApiKey'
+export const modelStorageKey = 'selectedModel'
+export const chatStorageKey = 'chatMessages:aoyin'
+export const unlockStorageKey = 'valkophoneUnlocked:v1'
+export const unlockCodeStorageKey = 'valkophoneUnlockCode:v1'
+export const unlockCodeHashStorageKey = 'valkophoneUnlockCodeHash:v1'
+export const unlockCodeLabelStorageKey = 'valkophoneUnlockCodeLabel:v1'
