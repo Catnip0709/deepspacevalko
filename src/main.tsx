@@ -6,6 +6,9 @@ import {
   Bell,
   Camera,
   ChevronRight,
+  CloudFog,
+  CloudRain,
+  CloudSun,
   ExternalLink,
   KeyRound,
   LockKeyhole,
@@ -16,6 +19,7 @@ import {
   Smartphone,
   Trees,
   Trash2,
+  Wind,
   Wifi
 } from 'lucide-react'
 import { aoyinPersona } from './config/aoyinPersona'
@@ -35,6 +39,16 @@ type ChatMessage = {
   role: ChatRole
   content: string
   createdAt: string
+}
+
+type WeatherScene = {
+  id: string
+  period: string
+  temperature: string
+  condition: string
+  detail: string
+  reminders: string[]
+  Icon: typeof CloudFog
 }
 
 type MomentReply = {
@@ -151,6 +165,45 @@ const stickyNote = {
     '小铃兰，平安回来。'
   ]
 }
+
+const weatherScenes: WeatherScene[] = [
+  {
+    id: 'morning',
+    period: '清晨',
+    temperature: '16°',
+    condition: '林间薄雾',
+    detail: '空气湿润，适合慢一点回家。',
+    reminders: ['oi：小铃兰，外套带上。', 'oi：雾还没散，别走近没有信号的林道。'],
+    Icon: CloudFog
+  },
+  {
+    id: 'afternoon',
+    period: '午后',
+    temperature: '22°',
+    condition: '晴间云影',
+    detail: '光线很好，风从南面过来。',
+    reminders: ['oi：补给包在门口，巧克力也在。别空着手出门。', 'oi：阳光不错，任务结束后陪我走一段。'],
+    Icon: CloudSun
+  },
+  {
+    id: 'evening',
+    period: '傍晚',
+    temperature: '18°',
+    condition: '细雨将至',
+    detail: '云层压低，路面会有潮气。',
+    reminders: ['oi：我来接你。别说不用，我已经在路上。', 'oi：通讯器开着，小铃兰，让我听见你的动静。'],
+    Icon: CloudRain
+  },
+  {
+    id: 'night',
+    period: '夜间',
+    temperature: '13°',
+    condition: '夜风偏凉',
+    detail: '森林边缘风速升高。',
+    reminders: ['oi：注意安全。你回来晚了我也会一直等。', 'oi：风声不对，靠近光亮的路走。'],
+    Icon: Wind
+  }
+]
 
 function getCurrentTime() {
   return new Intl.DateTimeFormat('zh-CN', {
@@ -662,6 +715,8 @@ function Desktop({
         <h1>猎人小姐</h1>
       </section>
 
+      <WeatherWidget />
+
       <section className="icon-grid" aria-label="桌面应用">
         {apps.map(({ id, label, description, Icon, accent }) => (
           <button
@@ -706,6 +761,40 @@ function Desktop({
         </button>
       </footer>
     </>
+  )
+}
+
+function WeatherWidget() {
+  const currentHour = new Date().getHours()
+  const sceneIndex =
+    currentHour < 11 ? 0 : currentHour < 17 ? 1 : currentHour < 21 ? 2 : 3
+  const scene = weatherScenes[sceneIndex]
+  const [reminderIndex, setReminderIndex] = useState(0)
+  const reminder = scene.reminders[reminderIndex % scene.reminders.length]
+  const WeatherIcon = scene.Icon
+
+  return (
+    <button
+      className="weather-widget"
+      type="button"
+      aria-label={`临空市天气，${scene.condition}，${scene.temperature}`}
+      onClick={() => setReminderIndex((current) => current + 1)}
+    >
+      <span className="weather-glow" aria-hidden="true" />
+      <span className="weather-main">
+        <span className="weather-place">
+          <span>临空市</span>
+          <small>{scene.period}</small>
+        </span>
+        <span className="weather-temp">{scene.temperature}</span>
+      </span>
+      <span className="weather-side">
+        <WeatherIcon size={33} strokeWidth={1.9} />
+        <strong>{scene.condition}</strong>
+        <small>{scene.detail}</small>
+      </span>
+      <span className="weather-note">{reminder}</span>
+    </button>
   )
 }
 
