@@ -5,7 +5,7 @@ import { initialChatMessages } from '../apps/wechat/chatData'
 export function readStoredChatMessages() {
   try {
     const raw = window.localStorage.getItem(chatStorageKey)
-    return raw ? removeLegacyWelcomeMessage(JSON.parse(raw) as ChatMessage[]) : initialChatMessages
+    return raw ? normalizeStoredMessages(JSON.parse(raw) as ChatMessage[]) : initialChatMessages
   } catch {
     return initialChatMessages
   }
@@ -19,6 +19,15 @@ export function writeStoredChatMessages(messages: ChatMessage[]) {
   }
 }
 
-function removeLegacyWelcomeMessage(messages: ChatMessage[]) {
-  return messages.filter((message) => message.id !== 'welcome-aoyin')
+function normalizeStoredMessages(messages: ChatMessage[]) {
+  if (!Array.isArray(messages)) {
+    return initialChatMessages
+  }
+
+  return messages
+    .filter((message) => message.id !== 'welcome-aoyin')
+    .map((message) => ({
+      ...message,
+      type: message.type ?? 'text'
+    }))
 }

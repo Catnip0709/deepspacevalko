@@ -70,28 +70,17 @@ export function App() {
     return true
   }
 
-  const sendChatMessage = async (text: string) => {
-    const trimmed = text.trim()
-
-    if (!trimmed || isChatting) {
-      return
-    }
-
+  const sendChatTurn = async (userMessage: ChatMessage) => {
     if (!apiKey) {
       setChatError('请先到设置里填写 DeepSeek API Key。')
       setScreen('settings')
       return
     }
 
-    const userMessage: ChatMessage = {
-      id: createId('user-message'),
-      role: 'user',
-      content: trimmed,
-      createdAt: getCurrentTime()
-    }
     const assistantMessage: ChatMessage = {
       id: createId('assistant-message'),
       role: 'assistant',
+      type: 'text',
       content: '',
       createdAt: getCurrentTime()
     }
@@ -102,11 +91,14 @@ export function App() {
     setIsChatting(true)
 
     try {
+      let receivedText = ''
+
       await streamAoyinChatReply({
         apiKey,
         model: selectedModel,
         chatMessages: [...chatMessages, userMessage],
         onDelta: (delta) => {
+          receivedText += delta
           setChatMessages((current) =>
             current.map((message) =>
               message.id === assistantMessage.id ? { ...message, content: message.content + delta } : message
@@ -114,6 +106,12 @@ export function App() {
           )
         }
       })
+
+      const parsedReply = parseAssistantReply(receivedText)
+
+      setChatMessages((current) =>
+        current.map((message) => (message.id === assistantMessage.id ? { ...message, ...parsedReply } : message))
+      )
     } catch (error) {
       const message = error instanceof Error ? error.message : 'DeepSeek 请求失败，请稍后再试。'
       setChatError(message)
@@ -127,6 +125,61 @@ export function App() {
     }
   }
 
+  const sendChatMessage = async (text: string) => {
+    const trimmed = text.trim()
+
+    if (!trimmed || isChatting) {
+      return
+    }
+
+    await sendChatTurn({
+      id: createId('user-message'),
+      role: 'user',
+      type: 'text',
+      content: trimmed,
+      createdAt: getCurrentTime()
+    })
+  }
+
+  const sendLocationMessage = async (place: string) => {
+    const trimmed = place.trim()
+
+    if (!trimmed || isChatting) {
+      return
+    }
+
+    await sendChatTurn({
+      id: createId('user-location'),
+      role: 'user',
+      type: 'location',
+      content: `我把定位发给你：${trimmed}`,
+      createdAt: getCurrentTime(),
+      location: {
+        place: trimmed
+      }
+    })
+  }
+
+  const sendRedPacketMessage = async (amount: string) => {
+    const trimmed = amount.trim()
+
+    if (!trimmed || isChatting) {
+      return
+    }
+
+    await sendChatTurn({
+      id: createId('user-red-packet'),
+      role: 'user',
+      type: 'redPacket',
+      content: `给你发了一个 ${trimmed} 元红包。`,
+      createdAt: getCurrentTime(),
+      redPacket: {
+        amount: trimmed,
+        note: '给敖尹的红包'
+      }
+    })
+  }
+
   const regenerateAssistantMessage = async (messagesForPrompt: ChatMessage[], assistantMessageId: string) => {
     if (!apiKey) {
       setChatError('请先到设置里填写 DeepSeek API Key。')
@@ -138,11 +191,14 @@ export function App() {
     setIsChatting(true)
 
     try {
+      let receivedText = ''
+
       await streamAoyinChatReply({
         apiKey,
         model: selectedModel,
         chatMessages: messagesForPrompt,
         onDelta: (delta) => {
+          receivedText += delta
           setChatMessages((current) =>
             current.map((message) =>
               message.id === assistantMessageId ? { ...message, content: message.content + delta } : message
@@ -150,6 +206,12 @@ export function App() {
           )
         }
       })
+
+      const parsedReply = parseAssistantReply(receivedText)
+
+      setChatMessages((current) =>
+        current.map((message) => (message.id === assistantMessageId ? { ...message, ...parsedReply } : message))
+      )
     } catch (error) {
       const message = error instanceof Error ? error.message : 'DeepSeek 请求失败，请稍后再试。'
       setChatError(message)
@@ -458,6 +520,8 @@ export function App() {
           momentError={momentError}
           replyingMomentIds={replyingMomentIds}
           onSendChatMessage={sendChatMessage}
+          onSendLocationMessage={sendLocationMessage}
+          onSendRedPacketMessage={sendRedPacketMessage}
           onEditLastUserMessage={editLastUserMessage}
           onRegenerateLastAssistantMessage={regenerateLastAssistantMessage}
           onClearChat={clearChatMessages}
@@ -491,4 +555,43 @@ function findLastMessageIndex(messages: ChatMessage[], role: ChatMessage['role']
   }
 
   return -1
+}
+
+function parseAssistantReply(rawText: string): Partial<ChatMessage> {
+  const redPacketMatch = rawText.match(/\[\[RED_PACKET:([^|\]]+)(?:\|([^\]]*))?\]\]/)
+
+  if (redPacketMatch) {
+    const content = rawText.replace(redPacketMatch[0], '').trim()
+    const amount = redPacketMatch[1].trim()
+    const note = redPacketMatch[2]?.trim()
+
+    return {
+      type: 'redPacket',
+      content: content || '给你发了一个红包。',
+      redPacket: {
+        amount,
+        note: note || '给小铃兰的红包'
+      }
+    }
+  }
+
+  const locationMatch = rawText.match(/\[\[LOCATION:([^\]]+)\]\]/)
+
+  if (locationMatch) {
+    const content = rawText.replace(locationMatch[0], '').trim()
+    const place = locationMatch[1].trim()
+
+    return {
+      type: 'location',
+      content: content || '位置发给你了。',
+      location: {
+        place
+      }
+    }
+  }
+
+  return {
+    type: 'text',
+    content: rawText.trim() || '我在。'
+  }
 }

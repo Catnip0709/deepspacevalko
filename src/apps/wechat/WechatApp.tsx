@@ -17,6 +17,8 @@ export function WechatApp({
   momentError,
   replyingMomentIds,
   onSendChatMessage,
+  onSendLocationMessage,
+  onSendRedPacketMessage,
   onEditLastUserMessage,
   onRegenerateLastAssistantMessage,
   onClearChat,
@@ -35,6 +37,8 @@ export function WechatApp({
   momentError: string
   replyingMomentIds: string[]
   onSendChatMessage: (text: string) => void
+  onSendLocationMessage: (place: string) => void
+  onSendRedPacketMessage: (amount: string) => void
   onEditLastUserMessage: (messageId: string, text: string) => void
   onRegenerateLastAssistantMessage: (messageId: string) => void
   onClearChat: () => void
@@ -83,6 +87,8 @@ export function WechatApp({
             error={chatError}
             hasApiKey={hasApiKey}
             onSend={onSendChatMessage}
+            onSendLocation={onSendLocationMessage}
+            onSendRedPacket={onSendRedPacketMessage}
             onEditLastUserMessage={onEditLastUserMessage}
             onRegenerateLastAssistantMessage={onRegenerateLastAssistantMessage}
             onOpenSettings={onOpenSettings}

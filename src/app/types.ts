@@ -5,13 +5,26 @@ export type WechatTab = 'chats' | 'moments'
 export type SettingsView = 'list' | 'unlock' | 'deepseek'
 export type MomentAuthor = 'aoyin' | 'hunter'
 export type ChatRole = 'user' | 'assistant'
+export type ChatMessageType = 'text' | 'location' | 'redPacket'
 export type DeepSeekModel = 'deepseek-v4-flash' | 'deepseek-v4-pro'
+
+export type ChatLocationPayload = {
+  place: string
+}
+
+export type ChatRedPacketPayload = {
+  amount: string
+  note?: string
+}
 
 export type ChatMessage = {
   id: string
   role: ChatRole
+  type?: ChatMessageType
   content: string
   createdAt: string
+  location?: ChatLocationPayload
+  redPacket?: ChatRedPacketPayload
 }
 
 export type MomentReply = {
