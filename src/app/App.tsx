@@ -17,7 +17,7 @@ import {
   unlockStorageKey
 } from './storageKeys'
 import { createId, getCurrentTime } from './time'
-import type { ChatMessage, DeepSeekModel, Moment, MomentAuthor, Screen, WechatTab, WechatView } from './types'
+import type { ChatMessage, DeepSeekModel, Moment, MomentAuthor, Screen, WechatTab } from './types'
 import { validateRedemptionCode } from '../config/redemptionCodes'
 import { normalizeDeepSeekModel } from '../config/deepseekModels'
 import { streamAoyinChatReply, streamAoyinMomentReply } from '../harness/chatHarness'
@@ -27,7 +27,6 @@ import { readLocalStorage, readStoredBoolean, writeLocalStorage } from '../stora
 export function App() {
   const [screen, setScreen] = useState<Screen>('desktop')
   const [wechatTab, setWechatTab] = useState<WechatTab>('chats')
-  const [wechatView, setWechatView] = useState<WechatView>('list')
   const [moments, setMoments] = useState<Moment[]>(initialMoments)
   const [isNoteOpen, setIsNoteOpen] = useState(false)
   const [apiKey, setApiKey] = useState(() => readLocalStorage(apiKeyStorageKey))
@@ -126,6 +125,116 @@ export function App() {
     } finally {
       setIsChatting(false)
     }
+  }
+
+  const regenerateAssistantMessage = async (messagesForPrompt: ChatMessage[], assistantMessageId: string) => {
+    if (!apiKey) {
+      setChatError('请先到设置里填写 DeepSeek API Key。')
+      setScreen('settings')
+      return
+    }
+
+    setChatError('')
+    setIsChatting(true)
+
+    try {
+      await streamAoyinChatReply({
+        apiKey,
+        model: selectedModel,
+        chatMessages: messagesForPrompt,
+        onDelta: (delta) => {
+          setChatMessages((current) =>
+            current.map((message) =>
+              message.id === assistantMessageId ? { ...message, content: message.content + delta } : message
+            )
+          )
+        }
+      })
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'DeepSeek 请求失败，请稍后再试。'
+      setChatError(message)
+      setChatMessages((current) =>
+        current.map((item) =>
+          item.id === assistantMessageId ? { ...item, content: `消息没有发出去：${message}` } : item
+        )
+      )
+    } finally {
+      setIsChatting(false)
+    }
+  }
+
+  const editLastUserMessage = (messageId: string, text: string) => {
+    if (!apiKey) {
+      setChatError('请先到设置里填写 DeepSeek API Key。')
+      setScreen('settings')
+      return
+    }
+
+    const trimmed = text.trim()
+
+    if (!trimmed) {
+      return
+    }
+
+    const userIndex = chatMessages.findIndex((message) => message.id === messageId && message.role === 'user')
+
+    if (userIndex < 0 || isChatting) {
+      return
+    }
+
+    const lastUserIndex = findLastMessageIndex(chatMessages, 'user')
+
+    if (userIndex !== lastUserIndex) {
+      return
+    }
+
+    const updatedUserMessage: ChatMessage = {
+      ...chatMessages[userIndex],
+      content: trimmed,
+      createdAt: getCurrentTime()
+    }
+    const messagesBeforeAssistant = [...chatMessages.slice(0, userIndex), updatedUserMessage]
+    const assistantMessage: ChatMessage = {
+      id: createId('assistant-message'),
+      role: 'assistant',
+      content: '',
+      createdAt: getCurrentTime()
+    }
+
+    setChatMessages([...messagesBeforeAssistant, assistantMessage])
+    void regenerateAssistantMessage(messagesBeforeAssistant, assistantMessage.id)
+  }
+
+  const regenerateLastAssistantMessage = (messageId: string) => {
+    if (!apiKey) {
+      setChatError('请先到设置里填写 DeepSeek API Key。')
+      setScreen('settings')
+      return
+    }
+
+    const assistantIndex = chatMessages.findIndex((message) => message.id === messageId && message.role === 'assistant')
+
+    if (assistantIndex < 0 || isChatting) {
+      return
+    }
+
+    const lastAssistantIndex = findLastMessageIndex(chatMessages, 'assistant')
+
+    if (assistantIndex !== lastAssistantIndex) {
+      return
+    }
+
+    const messagesForPrompt = chatMessages.slice(0, assistantIndex)
+    const hasUserMessage = messagesForPrompt.some((message) => message.role === 'user')
+
+    if (!hasUserMessage) {
+      return
+    }
+
+    setChatMessages((current) =>
+      current.map((message) => (message.id === messageId ? { ...message, content: '' } : message))
+    )
+    void regenerateAssistantMessage(messagesForPrompt, messageId)
   }
 
   const clearChatMessages = () => {
@@ -304,28 +413,23 @@ export function App() {
 
     setScreen('wechat')
     setWechatTab('chats')
-    setWechatView('list')
   }
 
   const returnHome = () => {
     setScreen('desktop')
-    setWechatView('list')
   }
 
   const openSettings = () => {
     setScreen('settings')
-    setWechatView('list')
   }
 
   const openHisPhone = () => {
     if (!isUnlocked) {
       setScreen('settings')
-      setWechatView('list')
       return
     }
 
     setScreen('hisPhone')
-    setWechatView('list')
   }
 
   return (
@@ -342,24 +446,20 @@ export function App() {
       {screen === 'wechat' ? (
         <WechatApp
           activeTab={wechatTab}
-          view={wechatView}
           moments={moments}
           chatMessages={chatMessages}
           isChatting={isChatting}
           chatError={chatError}
           hasApiKey={Boolean(apiKey)}
           onBackHome={returnHome}
-          onOpenConversation={() => setWechatView('conversation')}
-          onBackToList={() => setWechatView('list')}
-          onChangeTab={(tab) => {
-            setWechatTab(tab)
-            setWechatView('list')
-          }}
+          onChangeTab={setWechatTab}
           onPublishMoment={publishMoment}
           onReplyToMoment={replyToMoment}
           momentError={momentError}
           replyingMomentIds={replyingMomentIds}
           onSendChatMessage={sendChatMessage}
+          onEditLastUserMessage={editLastUserMessage}
+          onRegenerateLastAssistantMessage={regenerateLastAssistantMessage}
           onClearChat={clearChatMessages}
           onOpenSettings={openSettings}
         />
@@ -381,4 +481,14 @@ export function App() {
       {isNoteOpen ? <StickyNoteModal onClose={() => setIsNoteOpen(false)} /> : null}
     </PhoneFrame>
   )
+}
+
+function findLastMessageIndex(messages: ChatMessage[], role: ChatMessage['role']) {
+  for (let index = messages.length - 1; index >= 0; index -= 1) {
+    if (messages[index].role === role) {
+      return index
+    }
+  }
+
+  return -1
 }

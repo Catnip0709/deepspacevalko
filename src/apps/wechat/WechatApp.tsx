@@ -1,49 +1,51 @@
-import { ArrowLeft, Bell, Camera, MessageCircle } from 'lucide-react'
-import type { ChatMessage, Moment, WechatTab, WechatView } from '../../app/types'
-import { ChatList } from './ChatList'
+import { ArrowLeft, Bell, Camera, MessageCircle, Trash2 } from 'lucide-react'
+import type { ChatMessage, Moment, WechatTab } from '../../app/types'
 import { ConversationShell } from './ConversationShell'
 import { MomentsFeed } from './MomentsFeed'
 
 export function WechatApp({
   activeTab,
-  view,
   moments,
   chatMessages,
   isChatting,
   chatError,
   hasApiKey,
   onBackHome,
-  onOpenConversation,
-  onBackToList,
   onChangeTab,
   onPublishMoment,
   onReplyToMoment,
   momentError,
   replyingMomentIds,
   onSendChatMessage,
+  onEditLastUserMessage,
+  onRegenerateLastAssistantMessage,
   onClearChat,
   onOpenSettings
 }: {
   activeTab: WechatTab
-  view: WechatView
   moments: Moment[]
   chatMessages: ChatMessage[]
   isChatting: boolean
   chatError: string
   hasApiKey: boolean
   onBackHome: () => void
-  onOpenConversation: () => void
-  onBackToList: () => void
   onChangeTab: (tab: WechatTab) => void
   onPublishMoment: (text: string) => Promise<void>
   onReplyToMoment: (momentId: string, text: string) => Promise<void>
   momentError: string
   replyingMomentIds: string[]
   onSendChatMessage: (text: string) => void
+  onEditLastUserMessage: (messageId: string, text: string) => void
+  onRegenerateLastAssistantMessage: (messageId: string) => void
   onClearChat: () => void
   onOpenSettings: () => void
 }) {
-  const title = activeTab === 'chats' ? (view === 'conversation' ? '敖尹' : '微信') : '朋友圈'
+  const title = activeTab === 'chats' ? '敖尹' : '朋友圈'
+  const clearChatWithConfirmation = () => {
+    if (window.confirm('确认清空和敖尹的聊天记录吗？')) {
+      onClearChat()
+    }
+  }
 
   return (
     <section className="wechat-shell" aria-label="微信">
@@ -51,27 +53,38 @@ export function WechatApp({
         <button
           className="icon-button"
           type="button"
-          aria-label={view === 'conversation' ? '返回聊天列表' : '返回桌面'}
-          onClick={view === 'conversation' ? onBackToList : onBackHome}
+          aria-label="返回桌面"
+          onClick={onBackHome}
         >
           <ArrowLeft size={21} strokeWidth={2.4} />
         </button>
         <h2>{title}</h2>
-        <button className="icon-button ghost" type="button" aria-label="微信通知">
-          <Bell size={19} strokeWidth={2.3} />
-        </button>
+        {activeTab === 'chats' ? (
+          <button
+            className="icon-button ghost danger"
+            type="button"
+            onClick={clearChatWithConfirmation}
+            aria-label="清空与敖尹的聊天记录"
+          >
+            <Trash2 size={19} strokeWidth={2.3} />
+          </button>
+        ) : (
+          <button className="icon-button ghost" type="button" aria-label="微信通知">
+            <Bell size={19} strokeWidth={2.3} />
+          </button>
+        )}
       </header>
 
       <div className="wechat-content">
-        {activeTab === 'chats' && view === 'list' ? <ChatList onOpenConversation={onOpenConversation} /> : null}
-        {activeTab === 'chats' && view === 'conversation' ? (
+        {activeTab === 'chats' ? (
           <ConversationShell
             messages={chatMessages}
             isChatting={isChatting}
             error={chatError}
             hasApiKey={hasApiKey}
             onSend={onSendChatMessage}
-            onClear={onClearChat}
+            onEditLastUserMessage={onEditLastUserMessage}
+            onRegenerateLastAssistantMessage={onRegenerateLastAssistantMessage}
             onOpenSettings={onOpenSettings}
           />
         ) : null}
