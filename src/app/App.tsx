@@ -3,6 +3,7 @@ import { PhoneFrame } from '../components/PhoneFrame'
 import { Desktop } from '../desktop/Desktop'
 import { StickyNoteModal } from '../desktop/StickyNoteModal'
 import { HisPhoneApp } from '../apps/his-phone/HisPhoneApp'
+import { PetApp } from '../apps/pet/PetApp'
 import { SettingsApp } from '../apps/settings/SettingsApp'
 import { initialChatMessages } from '../apps/wechat/chatData'
 import { initialMoments } from '../apps/wechat/momentsData'
@@ -517,6 +518,7 @@ export function App() {
         <Desktop
           ownerName={personaSettings.hunter.name}
           openWechat={openWechat}
+          openPet={() => setScreen('pet')}
           openSettings={openSettings}
           openHisPhone={openHisPhone}
           openNote={() => setIsNoteOpen(true)}
@@ -562,6 +564,8 @@ export function App() {
       ) : null}
 
       {screen === 'hisPhone' ? <HisPhoneApp onBackHome={returnHome} /> : null}
+
+      {screen === 'pet' ? <PetApp hunterName={personaSettings.hunter.name} onBackHome={returnHome} /> : null}
 
       {isNoteOpen ? <StickyNoteModal onClose={() => setIsNoteOpen(false)} /> : null}
     </PhoneFrame>

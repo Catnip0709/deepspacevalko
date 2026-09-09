@@ -13,7 +13,7 @@ Valkophone 是一个纯前端同人手机网站，部署在 GitHub Pages。用�
 当前产品边界：
 
 - 首屏是猎人小姐手机桌面。
-- 桌面 App 包含：微信、他的手机、便签、设置。
+- 桌面 App 包含：微信、波万、他的手机、便签、设置。
 - 桌面 App 上方有“临空市天气”小组件。
 - 微信属于猎人小姐。
 - 微信底部 tab 只有：`聊天`、`朋友圈`。
@@ -102,6 +102,12 @@ src/
       DeepSeekSettings.tsx
     his-phone/
       HisPhoneApp.tsx
+    pet/
+      PetApp.tsx
+      PetScene.tsx
+      CareLog.tsx
+      petData.ts
+      petEngine.ts
   config/
     aoyinPersona.ts
     redemptionCodes.ts
@@ -142,6 +148,7 @@ App 内部状态适合放：
 - 设置页当前子页面。
 - 表单输入草稿。
 - 小组件点击状态。
+- 波万养宠状态与动作菜单。
 
 不要把所有状态都塞进顶层 `App`。如果一个状态只服务某个组件，就留在该组件内部。
 
@@ -153,6 +160,7 @@ App 内部状态适合放：
 
 - 默认角色人设、不可修改的敖尹核心设定、Prompt 构造：`src/config/aoyinPersona.ts`
 - 用户自定义人设存储：`src/storage/personaStore.ts`
+- 波万状态读写：`src/storage/petStore.ts`
 - 初始朋友圈内容：后续应迁移到 `src/apps/wechat/momentsData.ts`
 - 朋友圈 AI 回复 prompt：后续应迁移到 `src/apps/wechat/momentPrompts.ts`
 - 桌面便签内容：后续应迁移到 `src/desktop/stickyNote.ts`
@@ -306,6 +314,7 @@ GiftBoxApp
 - API Key
 - 模型选择
 - 聊天记录
+- 波万状态与照料记录
 - 简单 UI 偏好
 
 不适合 localStorage 的数据：

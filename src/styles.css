@@ -420,6 +420,11 @@ select {
   background: linear-gradient(145deg, rgba(63, 125, 74, 0.94), rgba(142, 190, 111, 0.92));
 }
 
+.icon-glass.pet {
+  color: #fff9ee;
+  background: linear-gradient(145deg, #76564a, #c27d61);
+}
+
 .icon-glass.moss {
   background: linear-gradient(145deg, rgba(45, 89, 64, 0.94), rgba(99, 134, 92, 0.88));
 }
@@ -2091,6 +2096,653 @@ select {
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.86),
     0 10px 18px rgba(31, 61, 43, 0.12);
+}
+
+.pet-shell {
+  position: absolute;
+  z-index: 4;
+  inset: 48px 0 0;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: 58px minmax(0, 1fr);
+  overflow: hidden;
+  color: #253d2d;
+  background:
+    linear-gradient(180deg, rgba(250, 252, 244, 0.96), rgba(225, 238, 221, 0.94)),
+    #edf4e8;
+}
+
+.pet-topbar {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) 42px;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 16px 7px;
+  border-bottom: 1px solid rgba(57, 83, 63, 0.09);
+  background: rgba(250, 252, 244, 0.8);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+.pet-topbar > div {
+  min-width: 0;
+  display: grid;
+  justify-items: center;
+  gap: 1px;
+}
+
+.pet-topbar strong {
+  font-family: "Songti SC", "STSong", "Noto Serif CJK SC", serif;
+  font-size: 17px;
+  line-height: 1.1;
+}
+
+.pet-topbar span {
+  color: rgba(37, 61, 45, 0.5);
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.pet-topbar .pet-back {
+  justify-self: start;
+}
+
+.pet-topbar-mark {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  justify-self: end;
+  border: 1px solid rgba(108, 72, 58, 0.16);
+  border-radius: 50%;
+  color: #6f4a3f !important;
+  background: #f4d8c5;
+  font-family: Georgia, serif;
+  font-size: 11px !important;
+  font-weight: 900 !important;
+}
+
+.pet-content {
+  min-height: 0;
+  display: grid;
+  grid-template-rows: 46px minmax(0, 1fr) 78px;
+}
+
+.pet-tabs {
+  width: calc(100% - 36px);
+  height: 34px;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 3px;
+  align-self: center;
+  justify-self: center;
+  padding: 3px;
+  border: 1px solid rgba(57, 83, 63, 0.1);
+  border-radius: 8px;
+  background: rgba(214, 228, 208, 0.58);
+}
+
+.pet-tabs button {
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 0;
+  border-radius: 6px;
+  color: rgba(37, 61, 45, 0.55);
+  background: transparent;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.pet-tabs button.active {
+  color: #253d2d;
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow: 0 3px 10px rgba(37, 61, 45, 0.09);
+}
+
+.pet-view-port {
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+
+.pet-home-view {
+  min-height: 100%;
+  display: grid;
+  grid-template-rows: minmax(390px, 1fr) auto;
+  align-content: start;
+}
+
+.pet-stage {
+  position: relative;
+  min-height: 390px;
+  overflow: hidden;
+  background:
+    linear-gradient(164deg, transparent 0 58%, rgba(114, 146, 104, 0.14) 58.4% 59.5%, transparent 60%),
+    linear-gradient(180deg, #dcebd7 0%, #c7ddc2 62%, #adc7a8 100%);
+  isolation: isolate;
+}
+
+.pet-stage::after {
+  content: "";
+  position: absolute;
+  z-index: 2;
+  inset: auto 0 0;
+  height: 124px;
+  pointer-events: none;
+  background: linear-gradient(180deg, transparent, rgba(231, 241, 225, 0.9) 72%);
+}
+
+.pet-stage-heading {
+  position: absolute;
+  z-index: 4;
+  inset: 14px 18px auto;
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 12px;
+  pointer-events: none;
+}
+
+.pet-stage-heading > div {
+  display: grid;
+  gap: 1px;
+}
+
+.pet-stage-heading span {
+  color: rgba(37, 61, 45, 0.56);
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.pet-stage-heading h2 {
+  margin: 0;
+  font-family: "Songti SC", "STSong", "Noto Serif CJK SC", serif;
+  font-size: 23px;
+  line-height: 1.08;
+}
+
+.pet-stage-heading > strong {
+  max-width: 124px;
+  padding-top: 5px;
+  overflow: hidden;
+  color: rgba(37, 61, 45, 0.7);
+  text-align: right;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+}
+
+.pet-avatar-button {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  background: #dbe9d5;
+  cursor: pointer;
+}
+
+.pet-avatar-button .bowan-character {
+  width: 94%;
+  height: 86%;
+  display: block;
+  margin: 42px auto 0;
+  user-select: none;
+  transition: transform 220ms ease, filter 220ms ease;
+  animation: pet-arrive 520ms cubic-bezier(0.2, 0.85, 0.3, 1) both;
+  filter: drop-shadow(0 18px 18px rgba(37, 61, 45, 0.18));
+}
+
+.pet-avatar-button:hover .bowan-character {
+  transform: scale(1.018);
+}
+
+.pet-avatar-button:active .bowan-character {
+  transform: scale(0.994);
+}
+
+.pet-home-view.sleeping .pet-avatar-button .bowan-character {
+  filter: saturate(0.8) brightness(0.88);
+  animation: pet-breathe 3.2s ease-in-out infinite;
+}
+
+.bowan-shadow {
+  fill: rgba(42, 60, 46, 0.18);
+}
+
+.bowan-tail,
+.bowan-body,
+.bowan-head,
+.bowan-leg {
+  fill: #515b53;
+  stroke: #354039;
+  stroke-width: 4;
+  stroke-linejoin: round;
+}
+
+.bowan-tail {
+  fill: #657068;
+}
+
+.bowan-ear {
+  fill: #465149;
+  stroke: #354039;
+  stroke-width: 4;
+  stroke-linejoin: round;
+}
+
+.bowan-ear-inner {
+  fill: #c78773;
+}
+
+.bowan-chest,
+.bowan-muzzle {
+  fill: #d8d4c5;
+}
+
+.bowan-eye {
+  fill: #c99845;
+  stroke: #2e352f;
+  stroke-width: 4;
+}
+
+.bowan-eye-glint {
+  fill: #fff9e8;
+}
+
+.bowan-brow,
+.bowan-eye-line,
+.bowan-mouth,
+.bowan-cheek,
+.bowan-toes {
+  fill: none;
+  stroke: #303a33;
+  stroke-width: 4;
+  stroke-linecap: round;
+}
+
+.bowan-brow {
+  stroke-width: 6;
+}
+
+.bowan-cheek {
+  stroke: #9e6e63;
+  stroke-width: 3;
+}
+
+.bowan-nose {
+  fill: #2e3430;
+}
+
+.bowan-collar {
+  fill: #a96554;
+  stroke: #70453c;
+  stroke-width: 3;
+}
+
+.bowan-tag {
+  fill: #d7a853;
+  stroke: #805d2e;
+  stroke-width: 3;
+}
+
+.bowan-tag-mark {
+  fill: none;
+  stroke: #6e4f29;
+  stroke-width: 3;
+  stroke-linecap: round;
+}
+
+.bowan-sleep-mark {
+  fill: #52675a;
+  font-family: Georgia, serif;
+  font-size: 31px;
+  font-weight: 700;
+}
+
+.bowan-sleep-mark.small {
+  font-size: 22px;
+}
+
+.pet-reaction {
+  position: absolute;
+  z-index: 5;
+  right: 18px;
+  bottom: 14px;
+  left: 18px;
+  min-height: 48px;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  padding: 9px 13px;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: 8px;
+  color: rgba(37, 61, 45, 0.84);
+  text-align: center;
+  background: rgba(255, 252, 245, 0.76);
+  box-shadow: 0 8px 24px rgba(37, 61, 45, 0.12);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.4;
+}
+
+.pet-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 18px;
+  padding: 13px 20px 15px;
+  background: rgba(248, 250, 241, 0.72);
+}
+
+.pet-stat {
+  min-width: 0;
+  display: grid;
+  gap: 5px;
+}
+
+.pet-stat > div:first-child {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.pet-stat span {
+  color: rgba(37, 61, 45, 0.58);
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.pet-stat strong {
+  color: rgba(37, 61, 45, 0.78);
+  font-size: 11px;
+}
+
+.pet-stat-track {
+  height: 5px;
+  overflow: hidden;
+  border-radius: 5px;
+  background: rgba(37, 61, 45, 0.1);
+}
+
+.pet-stat-track span {
+  height: 100%;
+  display: block;
+  border-radius: inherit;
+  transition: width 320ms ease;
+}
+
+.pet-actions {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+  padding: 8px 12px calc(8px + env(safe-area-inset-bottom));
+  border-top: 1px solid rgba(57, 83, 63, 0.1);
+  background: rgba(250, 252, 244, 0.88);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+.pet-actions button {
+  min-width: 0;
+  height: 54px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 3px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  color: rgba(37, 61, 45, 0.68);
+  background: transparent;
+  cursor: pointer;
+}
+
+.pet-actions button:hover,
+.pet-actions button:focus-visible {
+  color: #724c40;
+  background: #f5dfd0;
+}
+
+.pet-actions button:disabled {
+  opacity: 0.34;
+  cursor: default;
+}
+
+.pet-actions button span {
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.pet-sheet-layer {
+  position: absolute;
+  z-index: 12;
+  inset: 0;
+  display: grid;
+  align-items: end;
+}
+
+.pet-sheet-backdrop {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  border: 0;
+  background: rgba(25, 40, 30, 0.25);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+}
+
+.pet-action-sheet {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 14px;
+  padding: 18px 18px calc(20px + env(safe-area-inset-bottom));
+  border-radius: 18px 18px 0 0;
+  background: #f8f7ef;
+  box-shadow: 0 -16px 38px rgba(25, 40, 30, 0.18);
+  animation: pet-sheet-up 220ms ease-out both;
+}
+
+.pet-action-sheet header {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.pet-action-sheet header > div {
+  display: grid;
+  gap: 2px;
+}
+
+.pet-action-sheet header span {
+  color: rgba(37, 61, 45, 0.5);
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.pet-action-sheet h3 {
+  margin: 0;
+  font-family: "Songti SC", "STSong", "Noto Serif CJK SC", serif;
+  font-size: 19px;
+}
+
+.pet-sheet-options {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.pet-sheet-options button {
+  min-width: 0;
+  min-height: 72px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 4px;
+  padding: 10px 6px;
+  border: 1px solid rgba(114, 76, 64, 0.12);
+  border-radius: 8px;
+  color: #4b382f;
+  background: #f3e2d5;
+  cursor: pointer;
+}
+
+.pet-sheet-options button:nth-child(even) {
+  color: #314c37;
+  background: #e1ebdc;
+}
+
+.pet-sheet-options button:hover,
+.pet-sheet-options button:focus-visible {
+  transform: translateY(-2px);
+  border-color: rgba(114, 76, 64, 0.3);
+}
+
+.pet-sheet-options strong {
+  font-size: 13px;
+}
+
+.pet-sheet-options span {
+  color: currentColor;
+  opacity: 0.62;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.pet-log-view {
+  min-height: 100%;
+  padding: 18px 20px 28px;
+  background:
+    linear-gradient(90deg, transparent 33px, rgba(194, 125, 97, 0.18) 34px, transparent 35px),
+    #f7f4e9;
+}
+
+.pet-log-view > header {
+  padding-left: 29px;
+}
+
+.pet-log-view header p,
+.pet-log-view header h2 {
+  margin: 0;
+}
+
+.pet-log-view header p {
+  color: rgba(37, 61, 45, 0.48);
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.pet-log-view header h2 {
+  margin-top: 2px;
+  font-family: "Songti SC", "STSong", "Noto Serif CJK SC", serif;
+  font-size: 24px;
+}
+
+.pet-log-list {
+  display: grid;
+  gap: 0;
+  margin-top: 12px;
+}
+
+.pet-log-item {
+  position: relative;
+  padding: 13px 0 13px 29px;
+  border-bottom: 1px solid rgba(37, 61, 45, 0.09);
+}
+
+.pet-log-item::before {
+  content: "";
+  position: absolute;
+  top: 18px;
+  left: 9px;
+  width: 8px;
+  height: 8px;
+  border: 2px solid #f7f4e9;
+  border-radius: 50%;
+  background: #6e9270;
+  box-shadow: 0 0 0 1px rgba(37, 61, 45, 0.16);
+}
+
+.pet-log-item.aoyin::before {
+  background: #bf745f;
+}
+
+.pet-log-meta {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.pet-log-meta strong {
+  font-size: 12px;
+}
+
+.pet-log-meta time {
+  color: rgba(37, 61, 45, 0.42);
+  font-size: 9px;
+  font-weight: 800;
+}
+
+.pet-log-item p {
+  margin: 5px 0 0;
+  color: rgba(37, 61, 45, 0.74);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.55;
+}
+
+.pet-log-empty {
+  padding: 34px 0;
+  color: rgba(37, 61, 45, 0.46);
+  text-align: center;
+  font-size: 12px;
+}
+
+@keyframes pet-arrive {
+  from {
+    opacity: 0;
+    transform: scale(1.04);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes pet-breathe {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.012);
+  }
+}
+
+@keyframes pet-sheet-up {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @media (max-width: 430px) {

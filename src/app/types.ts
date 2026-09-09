@@ -1,6 +1,6 @@
 import type { LucideIcon } from 'lucide-react'
 
-export type Screen = 'desktop' | 'wechat' | 'settings' | 'hisPhone'
+export type Screen = 'desktop' | 'wechat' | 'settings' | 'hisPhone' | 'pet'
 export type WechatTab = 'chats' | 'moments'
 export type SettingsView = 'list' | 'unlock' | 'deepseek' | 'aoyinPersona' | 'hunterPersona'
 export type MomentAuthor = 'aoyin' | 'hunter'

@@ -1,4 +1,4 @@
-import { MessageCircle, NotebookPen, Settings, Smartphone } from 'lucide-react'
+import { MessageCircle, NotebookPen, PawPrint, Settings, Smartphone } from 'lucide-react'
 import type { AppIcon } from '../app/types'
 import { stickyNote } from './stickyNote'
 import { WeatherWidget } from './WeatherWidget'
@@ -10,6 +10,13 @@ const apps: AppIcon[] = [
     description: '与敖尹的置顶聊天',
     Icon: MessageCircle,
     accent: 'leaf'
+  },
+  {
+    id: 'pet',
+    label: '波万',
+    description: '照顾小狼波万',
+    Icon: PawPrint,
+    accent: 'pet'
   },
   {
     id: 'his-phone',
@@ -37,12 +44,14 @@ const apps: AppIcon[] = [
 export function Desktop({
   ownerName,
   openWechat,
+  openPet,
   openSettings,
   openHisPhone,
   openNote
 }: {
   ownerName: string
   openWechat: () => void
+  openPet: () => void
   openSettings: () => void
   openHisPhone: () => void
   openNote: () => void
@@ -66,6 +75,8 @@ export function Desktop({
             onClick={
               id === 'wechat'
                 ? openWechat
+                : id === 'pet'
+                  ? openPet
                 : id === 'settings'
                   ? openSettings
                   : id === 'his-phone'
