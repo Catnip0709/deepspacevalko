@@ -35,11 +35,13 @@ const apps: AppIcon[] = [
 ]
 
 export function Desktop({
+  ownerName,
   openWechat,
   openSettings,
   openHisPhone,
   openNote
 }: {
+  ownerName: string
   openWechat: () => void
   openSettings: () => void
   openHisPhone: () => void
@@ -49,7 +51,7 @@ export function Desktop({
     <>
       <section className="desktop-copy" aria-label="桌面标题">
         <p>Hunter&apos;s iPhone</p>
-        <h1>猎人小姐</h1>
+        <h1>{ownerName}</h1>
       </section>
 
       <WeatherWidget />

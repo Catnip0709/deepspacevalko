@@ -1,5 +1,5 @@
 import { ArrowLeft, Bell, Camera, MessageCircle, Trash2 } from 'lucide-react'
-import type { ChatMessage, Moment, WechatTab } from '../../app/types'
+import type { ChatMessage, Moment, PersonaSettings, WechatTab } from '../../app/types'
 import { ConversationShell } from './ConversationShell'
 import { MomentsFeed } from './MomentsFeed'
 
@@ -10,6 +10,7 @@ export function WechatApp({
   isChatting,
   chatError,
   hasApiKey,
+  personaSettings,
   onBackHome,
   onChangeTab,
   onPublishMoment,
@@ -30,6 +31,7 @@ export function WechatApp({
   isChatting: boolean
   chatError: string
   hasApiKey: boolean
+  personaSettings: PersonaSettings
   onBackHome: () => void
   onChangeTab: (tab: WechatTab) => void
   onPublishMoment: (text: string) => Promise<void>
@@ -99,6 +101,7 @@ export function WechatApp({
             moments={moments}
             momentError={momentError}
             replyingMomentIds={replyingMomentIds}
+            hunterName={personaSettings.hunter.name}
             onPublishMoment={onPublishMoment}
             onReplyToMoment={onReplyToMoment}
           />

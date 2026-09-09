@@ -1,4 +1,5 @@
-import type { ChatMessage } from '../app/types'
+import type { ChatMessage, PersonaSettings } from '../app/types'
+import { fixedAoyinProfile } from '../config/aoyinPersona'
 
 export type WechatToolName = 'send_location' | 'send_red_packet'
 
@@ -33,7 +34,7 @@ type WechatToolDefinition = {
 export const wechatTools: WechatToolDefinition[] = [
   {
     name: 'send_location',
-    description: '敖尹向猎人小姐发送自己的定位。用户明确要求敖尹发送定位或位置时必须调用。',
+    description: '向对方发送自己的定位。对方明确要求发送定位或位置时必须调用。',
     parameters: {
       place: '定位地点名称，必须具体且非空',
       note: '随定位附带的简短留言，可选'
@@ -42,7 +43,7 @@ export const wechatTools: WechatToolDefinition[] = [
   },
   {
     name: 'send_red_packet',
-    description: '敖尹向猎人小姐发送红包。用户明确要求敖尹发红包时必须调用。',
+    description: '向对方发送红包。对方明确要求发红包时必须调用。',
     parameters: {
       amount: '红包金额，使用大于 0 的数字字符串，最多两位小数',
       note: '红包留言，可选'
@@ -51,7 +52,13 @@ export const wechatTools: WechatToolDefinition[] = [
   }
 ]
 
-export function buildWechatToolInstructions(requiredTool: WechatToolName | null, isRetry = false) {
+export function buildWechatToolInstructions(
+  requiredTool: WechatToolName | null,
+  persona: PersonaSettings,
+  isRetry = false
+) {
+  const hunterName = persona.hunter.name
+  const hunterNickname = persona.hunter.nicknameFromAoyin || hunterName
   const definitions = wechatTools
     .map(
       (tool) =>
@@ -59,11 +66,35 @@ export function buildWechatToolInstructions(requiredTool: WechatToolName | null,
     )
     .join('\n')
   const requiredInstruction = requiredTool
-    ? `猎人小姐这次明确要求使用 ${requiredTool}。toolCall 不得为 null，必须调用该工具。`
+    ? `${hunterName}这次明确要求使用 ${requiredTool}。toolCall 不得为 null，必须调用该工具。`
     : '仅在场景自然需要时调用工具；不需要工具时 toolCall 必须为 null。'
   const retryInstruction = isRetry
     ? '上一次输出没有通过协议校验。这次必须严格遵守 JSON 格式、工具名和参数要求。'
     : ''
+  const textReplyExample = JSON.stringify({
+    reply: `给${hunterName}看的自然回复`,
+    toolCall: null
+  })
+  const locationExample = JSON.stringify({
+    reply: '站着别动，我的位置发你。',
+    toolCall: {
+      name: 'send_location',
+      arguments: {
+        place: '临空市猎人协会东门',
+        note: '我来接你'
+      }
+    }
+  })
+  const redPacketExample = JSON.stringify({
+    reply: '拿去买你刚才念叨的那杯。',
+    toolCall: {
+      name: 'send_red_packet',
+      arguments: {
+        amount: '52.00',
+        note: `给${hunterNickname}`
+      }
+    }
+  })
 
   return [
     '你可以使用以下微信工具：',
@@ -73,18 +104,21 @@ export function buildWechatToolInstructions(requiredTool: WechatToolName | null,
     '每次只能调用一个工具。',
     '必须只输出一个合法 JSON 对象，不要使用 Markdown，不要添加 JSON 之外的文字。',
     '固定响应结构：',
-    '{"reply":"给猎人小姐看的自然回复","toolCall":null}',
+    textReplyExample,
     '调用定位示例：',
-    '{"reply":"站着别动，我的位置发你。","toolCall":{"name":"send_location","arguments":{"place":"临空市猎人协会东门","note":"我来接你"}}}',
+    locationExample,
     '调用红包示例：',
-    '{"reply":"拿去买你刚才念叨的那杯。","toolCall":{"name":"send_red_packet","arguments":{"amount":"52.00","note":"给小铃兰"}}}',
-    'reply 里不要提到工具、JSON、协议或调用过程，也不要写“敖尹：”。'
+    redPacketExample,
+    `reply 里不要提到工具、JSON、协议或调用过程，也不要写“${fixedAoyinProfile.name}：”。`
   ]
     .filter(Boolean)
     .join('\n')
 }
 
-export function detectRequiredWechatTool(messages: ChatMessage[]): WechatToolName | null {
+export function detectRequiredWechatTool(
+  messages: ChatMessage[],
+  persona: PersonaSettings
+): WechatToolName | null {
   const lastUserMessage = [...messages].reverse().find((message) => message.role === 'user')
 
   if (!lastUserMessage || (lastUserMessage.type ?? 'text') !== 'text') {
@@ -97,18 +131,26 @@ export function detectRequiredWechatTool(messages: ChatMessage[]): WechatToolNam
     return null
   }
 
-  if (isWechatToolRequested(text, '定位|位置')) {
+  const aliases = persona.aoyin.aliases
+    .split(/[、,，/\s]+/)
+    .map((alias) => alias.trim())
+    .filter(Boolean)
+  const assistantPattern = [fixedAoyinProfile.name, fixedAoyinProfile.englishName, '小狼', 'oi', ...aliases]
+    .map(escapeRegExp)
+    .join('|')
+
+  if (isWechatToolRequested(text, '定位|位置', assistantPattern)) {
     return 'send_location'
   }
 
-  if (isWechatToolRequested(text, '红包')) {
+  if (isWechatToolRequested(text, '红包', assistantPattern)) {
     return 'send_red_packet'
   }
 
   return null
 }
 
-function isWechatToolRequested(text: string, targetPattern: string) {
+function isWechatToolRequested(text: string, targetPattern: string, assistantPattern: string) {
   const negatedPatterns = [
     new RegExp(`(?:别|不要|不用|无需)(?:再)?(?:给我|向我)?(?:发|给|分享|传).{0,4}(?:${targetPattern})`),
     new RegExp(`(?:别|不要|不用|无需)(?:再)?(?:把)?(?:${targetPattern}).{0,4}(?:发|给|分享|传)(?:给)?我`)
@@ -119,8 +161,8 @@ function isWechatToolRequested(text: string, targetPattern: string) {
   }
 
   const requestPatterns = [
-    new RegExp(`(?:^|[，。！？,!?\\s])(?:那)?(?:你|敖尹|小狼|oi).{0,6}(?:发|给|分享|传).{0,6}(?:${targetPattern})`, 'i'),
-    new RegExp(`(?:让|叫)(?:你|敖尹|小狼|oi).{0,6}(?:发|给|分享|传).{0,6}(?:${targetPattern})`, 'i'),
+    new RegExp(`(?:^|[，。！？,!?\\s])(?:那)?(?:你|${assistantPattern}).{0,6}(?:发|给|分享|传).{0,6}(?:${targetPattern})`, 'i'),
+    new RegExp(`(?:让|叫)(?:你|${assistantPattern}).{0,6}(?:发|给|分享|传).{0,6}(?:${targetPattern})`, 'i'),
     new RegExp(`(?:把)?(?:你|自己)(?:的)?(?:${targetPattern}).{0,6}(?:发|给|分享|传)(?:给)?我`),
     new RegExp(`(?:给|发|分享|传).{0,3}我.{0,4}(?:${targetPattern})`),
     new RegExp(`(?:${targetPattern}).{0,4}(?:发|给|分享|传).{0,3}我`),
@@ -196,7 +238,10 @@ export function parseWechatToolResponse(rawText: string, requiredTool: WechatToo
   }
 }
 
-export function aoyinReplyToMessagePatch(reply: AoyinChatReply): Partial<ChatMessage> {
+export function aoyinReplyToMessagePatch(
+  reply: AoyinChatReply,
+  hunterNickname: string
+): Partial<ChatMessage> {
   if (reply.toolCall?.name === 'send_location') {
     return {
       type: 'location',
@@ -212,7 +257,7 @@ export function aoyinReplyToMessagePatch(reply: AoyinChatReply): Partial<ChatMes
       content: reply.reply,
       redPacket: {
         amount: reply.toolCall.arguments.amount,
-        note: reply.toolCall.arguments.note || '给小铃兰的红包'
+        note: reply.toolCall.arguments.note || `给${hunterNickname}`
       },
       location: undefined
     }
@@ -224,6 +269,10 @@ export function aoyinReplyToMessagePatch(reply: AoyinChatReply): Partial<ChatMes
     location: undefined,
     redPacket: undefined
   }
+}
+
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
 function parseJsonObject(rawText: string): Record<string, unknown> {

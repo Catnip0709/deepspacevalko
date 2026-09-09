@@ -21,7 +21,7 @@ Valkophone 是一个纯前端同人手机网站，部署在 GitHub Pages。用�
 - 敖尹头像统一使用 `🐺`。
 - 敖尹称呼猎人小姐为“小铃兰”。
 - 天气组件中的提醒署名使用 `oi：`，不要写成 `敖尹：`。
-- 不在 UI 中展示系统提示词、人设配置、代码实现说明。
+- 不在 UI 中展示系统提示词或代码实现说明；设置页允许编辑结构化人设字段，但不开放底层 Prompt 和工具协议。
 
 ## 3. 技术栈
 
@@ -151,7 +151,8 @@ App 内部状态适合放：
 
 推荐规则：
 
-- 角色人设、AI system prompt：`src/config/aoyinPersona.ts`
+- 默认角色人设、不可修改的敖尹核心设定、Prompt 构造：`src/config/aoyinPersona.ts`
+- 用户自定义人设存储：`src/storage/personaStore.ts`
 - 初始朋友圈内容：后续应迁移到 `src/apps/wechat/momentsData.ts`
 - 朋友圈 AI 回复 prompt：后续应迁移到 `src/apps/wechat/momentPrompts.ts`
 - 桌面便签内容：后续应迁移到 `src/desktop/stickyNote.ts`
@@ -199,8 +200,9 @@ API Key 规则：
 
 Prompt 规则：
 
-- 人设配置写在 `src/config/aoyinPersona.ts`。
-- 不允许用户在 UI 中编辑人设。
+- 默认人设和敖尹不可修改的姓名、年龄、身份、能力写在 `src/config/aoyinPersona.ts`。
+- 用户可在设置页编辑结构化人设字段，配置仅保存在当前浏览器；不允许直接编辑或展示 system prompt。
+- 人设 Prompt 必须通过 `buildAoyinSystemPrompt` 构造，不要在 UI 或业务组件中拼接。
 - 不要在界面展示 system prompt。
 - 微信聊天使用人设 + 完整聊天上下文；达到模型上下文上限前不要自行截断。
 - 朋友圈回复使用场景化短 prompt，只生成一条短评论。

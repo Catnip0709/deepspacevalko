@@ -1,24 +1,38 @@
 import { useState, type FormEvent } from 'react'
-import { ArrowLeft, BadgeCheck, ChevronRight, ExternalLink, KeyRound, LockKeyhole } from 'lucide-react'
+import {
+  ArrowLeft,
+  BadgeCheck,
+  ChevronRight,
+  ExternalLink,
+  KeyRound,
+  LockKeyhole,
+  PawPrint,
+  UserRound
+} from 'lucide-react'
 import { unlockCodeLabelStorageKey, unlockCodeStorageKey } from '../../app/storageKeys'
-import type { DeepSeekModel, SettingsView } from '../../app/types'
+import type { DeepSeekModel, PersonaSettings, SettingsView } from '../../app/types'
 import { maskApiKey, maskRedemptionCode } from '../../app/masking'
 import { deepSeekModels, defaultModel, normalizeDeepSeekModel } from '../../config/deepseekModels'
 import { readLocalStorage } from '../../storage/localStorage'
+import { AoyinPersonaSettings, HunterPersonaSettings } from './PersonaSettings'
 
 export function SettingsApp({
   apiKey,
   isUnlocked,
   selectedModel,
+  personaSettings,
   onBackHome,
   onSave,
+  onSavePersonaSettings,
   onRedeem
 }: {
   apiKey: string
   isUnlocked: boolean
   selectedModel: string
+  personaSettings: PersonaSettings
   onBackHome: () => void
   onSave: (apiKey: string, model: string) => void
+  onSavePersonaSettings: (settings: PersonaSettings) => void
   onRedeem: (code: string) => Promise<boolean>
 }) {
   const [settingsView, setSettingsView] = useState<SettingsView>('list')
@@ -32,7 +46,16 @@ export function SettingsApp({
     unlockCodeLabelStorageKey,
     isUnlocked && draftCode ? maskRedemptionCode(draftCode) : ''
   )
-  const title = settingsView === 'list' ? '设置' : settingsView === 'unlock' ? '手机解锁' : 'DeepSeek API Key'
+  const title =
+    settingsView === 'list'
+      ? '设置'
+      : settingsView === 'unlock'
+        ? '手机解锁'
+        : settingsView === 'deepseek'
+          ? 'DeepSeek API Key'
+          : settingsView === 'aoyinPersona'
+            ? '敖尹设定'
+            : '猎人小姐设定'
   const goBack = settingsView === 'list' ? onBackHome : () => setSettingsView('list')
 
   const submitRedemptionCode = async (event: FormEvent<HTMLFormElement>) => {
@@ -96,6 +119,28 @@ export function SettingsApp({
               <span className="settings-list-main">
                 <strong>DeepSeek API Key</strong>
                 <small>{apiKey ? `已保存 ${maskedKey}` : '填写自己的 API Key'}</small>
+              </span>
+              <ChevronRight size={19} strokeWidth={2.4} />
+            </button>
+
+            <button className="settings-list-row" type="button" onClick={() => setSettingsView('aoyinPersona')}>
+              <span className="settings-icon persona-aoyin">
+                <PawPrint size={25} strokeWidth={2.3} />
+              </span>
+              <span className="settings-list-main">
+                <strong>敖尹设定</strong>
+                <small>性格、喜好与相处方式</small>
+              </span>
+              <ChevronRight size={19} strokeWidth={2.4} />
+            </button>
+
+            <button className="settings-list-row" type="button" onClick={() => setSettingsView('hunterPersona')}>
+              <span className="settings-icon persona-hunter">
+                <UserRound size={25} strokeWidth={2.3} />
+              </span>
+              <span className="settings-list-main">
+                <strong>猎人小姐设定</strong>
+                <small>名字、称呼与个人经历</small>
               </span>
               <ChevronRight size={19} strokeWidth={2.4} />
             </button>
@@ -243,6 +288,14 @@ export function SettingsApp({
               {saved ? <p className="settings-saved">已保存到当前浏览器。</p> : null}
             </form>
           </>
+        ) : null}
+
+        {settingsView === 'aoyinPersona' ? (
+          <AoyinPersonaSettings personaSettings={personaSettings} onSave={onSavePersonaSettings} />
+        ) : null}
+
+        {settingsView === 'hunterPersona' ? (
+          <HunterPersonaSettings personaSettings={personaSettings} onSave={onSavePersonaSettings} />
         ) : null}
       </div>
     </section>

@@ -7,12 +7,14 @@ export function MomentsFeed({
   moments,
   momentError,
   replyingMomentIds,
+  hunterName,
   onPublishMoment,
   onReplyToMoment
 }: {
   moments: Moment[]
   momentError: string
   replyingMomentIds: string[]
+  hunterName: string
   onPublishMoment: (text: string) => Promise<void>
   onReplyToMoment: (momentId: string, text: string) => Promise<void>
 }) {
@@ -51,7 +53,7 @@ export function MomentsFeed({
           <label>
             <span>
               <Trees size={17} strokeWidth={2.2} />
-              猎人小姐发朋友圈
+              {hunterName}发朋友圈
             </span>
             <textarea
               value={draft}
@@ -71,17 +73,20 @@ export function MomentsFeed({
           {item.author === 'aoyin' ? <AoyinAvatar /> : <HunterAvatar />}
           <div className="moment-body">
             <div className="moment-title">
-              <span>{item.authorName}</span>
+              <span>{item.author === 'hunter' ? hunterName : item.authorName}</span>
               <time>{item.time}</time>
             </div>
             <p>{item.text}</p>
             {item.replies.length > 0 ? (
-              <div className="moment-replies" aria-label={`${item.authorName}朋友圈回复`}>
+              <div
+                className="moment-replies"
+                aria-label={`${item.author === 'hunter' ? hunterName : item.authorName}朋友圈回复`}
+              >
                 {item.replies.map((reply) => (
                   <div className={`moment-reply ${reply.pending ? 'pending' : ''}`} key={reply.id}>
                     {reply.author === 'aoyin' ? <AoyinMiniAvatar /> : <HunterMiniAvatar />}
                     <p>
-                      <strong>{reply.author === 'aoyin' ? '敖尹' : '猎人小姐'}：</strong>
+                      <strong>{reply.author === 'aoyin' ? '敖尹' : hunterName}：</strong>
                       {reply.text}
                     </p>
                   </div>
@@ -98,7 +103,7 @@ export function MomentsFeed({
                   }))
                 }
                 placeholder={item.author === 'aoyin' ? '回复敖尹...' : '补充一句...'}
-                aria-label={`回复${item.authorName}的朋友圈`}
+                aria-label={`回复${item.author === 'hunter' ? hunterName : item.authorName}的朋友圈`}
                 disabled={replyingMomentIds.includes(item.id)}
               />
               <button type="submit" disabled={!replyDrafts[item.id]?.trim() || replyingMomentIds.includes(item.id)}>

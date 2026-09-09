@@ -17,13 +17,22 @@ import {
   unlockStorageKey
 } from './storageKeys'
 import { createId, getCurrentTime } from './time'
-import type { ChatMessage, DeepSeekModel, Moment, MomentAuthor, Screen, WechatTab } from './types'
+import type {
+  ChatMessage,
+  DeepSeekModel,
+  Moment,
+  MomentAuthor,
+  PersonaSettings,
+  Screen,
+  WechatTab
+} from './types'
 import { validateRedemptionCode } from '../config/redemptionCodes'
 import { normalizeDeepSeekModel } from '../config/deepseekModels'
 import { requestAoyinChatReply, streamAoyinMomentReply } from '../harness/chatHarness'
 import { aoyinReplyToMessagePatch } from '../harness/wechatTools'
 import { readStoredChatMessages, writeStoredChatMessages } from '../storage/chatStore'
 import { readLocalStorage, readStoredBoolean, writeLocalStorage } from '../storage/localStorage'
+import { readStoredPersonaSettings, writeStoredPersonaSettings } from '../storage/personaStore'
 
 export function App() {
   const [screen, setScreen] = useState<Screen>('desktop')
@@ -36,6 +45,7 @@ export function App() {
     normalizeDeepSeekModel(readLocalStorage(modelStorageKey))
   )
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>(readStoredChatMessages)
+  const [personaSettings, setPersonaSettings] = useState<PersonaSettings>(readStoredPersonaSettings)
   const [isChatting, setIsChatting] = useState(false)
   const [chatError, setChatError] = useState('')
   const [momentError, setMomentError] = useState('')
@@ -53,6 +63,10 @@ export function App() {
     setSelectedModel(trimmedModel)
     writeLocalStorage(apiKeyStorageKey, trimmedApiKey)
     writeLocalStorage(modelStorageKey, trimmedModel)
+  }
+
+  const savePersonaSettings = (nextSettings: PersonaSettings) => {
+    setPersonaSettings(writeStoredPersonaSettings(nextSettings))
   }
 
   const redeemCode = async (code: string) => {
@@ -95,9 +109,13 @@ export function App() {
       const reply = await requestAoyinChatReply({
         apiKey,
         model: selectedModel,
-        chatMessages: [...chatMessages, userMessage]
+        chatMessages: [...chatMessages, userMessage],
+        persona: personaSettings
       })
-      const messagePatch = aoyinReplyToMessagePatch(reply)
+      const messagePatch = aoyinReplyToMessagePatch(
+        reply,
+        personaSettings.hunter.nicknameFromAoyin || personaSettings.hunter.name
+      )
 
       setChatMessages((current) =>
         current.map((message) => (message.id === assistantMessage.id ? { ...message, ...messagePatch } : message))
@@ -187,9 +205,13 @@ export function App() {
       const reply = await requestAoyinChatReply({
         apiKey,
         model: selectedModel,
-        chatMessages: messagesForPrompt
+        chatMessages: messagesForPrompt,
+        persona: personaSettings
       })
-      const messagePatch = aoyinReplyToMessagePatch(reply)
+      const messagePatch = aoyinReplyToMessagePatch(
+        reply,
+        personaSettings.hunter.nicknameFromAoyin || personaSettings.hunter.name
+      )
 
       setChatMessages((current) =>
         current.map((message) => (message.id === assistantMessageId ? { ...message, ...messagePatch } : message))
@@ -327,6 +349,7 @@ export function App() {
         sourceAuthor,
         sourceText,
         hunterComment,
+        persona: personaSettings,
         onDelta: (delta) => {
           receivedText += delta
           setMoments((current) =>
@@ -353,7 +376,9 @@ export function App() {
                   reply.id === replyId
                     ? {
                         ...reply,
-                        text: receivedText.trim() || '我看到了，小铃兰。',
+                        text:
+                          receivedText.trim() ||
+                          `我看到了，${personaSettings.hunter.nicknameFromAoyin || personaSettings.hunter.name}。`,
                         pending: false
                       }
                     : reply
@@ -394,7 +419,7 @@ export function App() {
     const newMoment: Moment = {
       id: momentId,
       author: 'hunter',
-      authorName: '猎人小姐',
+      authorName: personaSettings.hunter.name,
       time: getCurrentTime(),
       text,
       replies: [
@@ -490,6 +515,7 @@ export function App() {
     <PhoneFrame>
       {screen === 'desktop' ? (
         <Desktop
+          ownerName={personaSettings.hunter.name}
           openWechat={openWechat}
           openSettings={openSettings}
           openHisPhone={openHisPhone}
@@ -505,6 +531,7 @@ export function App() {
           isChatting={isChatting}
           chatError={chatError}
           hasApiKey={Boolean(apiKey)}
+          personaSettings={personaSettings}
           onBackHome={returnHome}
           onChangeTab={setWechatTab}
           onPublishMoment={publishMoment}
@@ -526,8 +553,10 @@ export function App() {
           apiKey={apiKey}
           isUnlocked={isUnlocked}
           selectedModel={selectedModel}
+          personaSettings={personaSettings}
           onBackHome={returnHome}
           onSave={saveApiKey}
+          onSavePersonaSettings={savePersonaSettings}
           onRedeem={redeemCode}
         />
       ) : null}

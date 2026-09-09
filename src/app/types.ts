@@ -2,11 +2,35 @@ import type { LucideIcon } from 'lucide-react'
 
 export type Screen = 'desktop' | 'wechat' | 'settings' | 'hisPhone'
 export type WechatTab = 'chats' | 'moments'
-export type SettingsView = 'list' | 'unlock' | 'deepseek'
+export type SettingsView = 'list' | 'unlock' | 'deepseek' | 'aoyinPersona' | 'hunterPersona'
 export type MomentAuthor = 'aoyin' | 'hunter'
 export type ChatRole = 'user' | 'assistant'
 export type ChatMessageType = 'text' | 'location' | 'redPacket'
 export type DeepSeekModel = 'deepseek-v4-flash' | 'deepseek-v4-pro'
+
+export type AoyinPersonaSettings = {
+  aliases: string
+  likes: string
+  personality: string
+  relationshipStyle: string
+  speakingStyle: string
+  customNotes: string
+}
+
+export type HunterPersonaSettings = {
+  name: string
+  nicknameFromAoyin: string
+  identity: string
+  personality: string
+  relationship: string
+  customNotes: string
+}
+
+export type PersonaSettings = {
+  version: 1
+  aoyin: AoyinPersonaSettings
+  hunter: HunterPersonaSettings
+}
 
 export type ChatLocationPayload = {
   place: string

@@ -1,4 +1,4 @@
-import type { ChatMessage, DeepSeekModel, MomentAuthor } from '../app/types'
+import type { ChatMessage, DeepSeekModel, MomentAuthor, PersonaSettings } from '../app/types'
 import { streamDeepSeekCompletion } from './deepseekClient'
 import { buildDeepSeekMessages, buildMomentReplyMessages } from './messageBuilders'
 import {
@@ -10,19 +10,21 @@ import {
 export async function requestAoyinChatReply({
   apiKey,
   model,
-  chatMessages
+  chatMessages,
+  persona
 }: {
   apiKey: string
   model: DeepSeekModel
   chatMessages: ChatMessage[]
+  persona: PersonaSettings
 }): Promise<AoyinChatReply> {
-  const requiredTool = detectRequiredWechatTool(chatMessages)
+  const requiredTool = detectRequiredWechatTool(chatMessages, persona)
 
   for (let attempt = 0; attempt < 2; attempt += 1) {
     const rawText = await streamDeepSeekCompletion({
       apiKey,
       model,
-      messages: buildDeepSeekMessages(chatMessages, {
+      messages: buildDeepSeekMessages(chatMessages, persona, {
         requiredTool,
         isToolRetry: attempt > 0
       }),
@@ -46,6 +48,7 @@ export function streamAoyinMomentReply({
   sourceAuthor,
   sourceText,
   hunterComment,
+  persona,
   onDelta
 }: {
   apiKey: string
@@ -53,6 +56,7 @@ export function streamAoyinMomentReply({
   sourceAuthor: MomentAuthor
   sourceText: string
   hunterComment?: string
+  persona: PersonaSettings
   onDelta: (delta: string) => void
 }) {
   return streamDeepSeekCompletion({
@@ -61,7 +65,8 @@ export function streamAoyinMomentReply({
     messages: buildMomentReplyMessages({
       sourceAuthor,
       sourceText,
-      hunterComment
+      hunterComment,
+      persona
     }),
     onDelta
   })
