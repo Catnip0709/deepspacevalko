@@ -6,7 +6,7 @@ export function MessageContent({ message }: { message: ChatMessage }) {
     return (
       <>
         {message.role === 'assistant' && message.content ? <p>{message.content}</p> : null}
-        <LocationMessageCard place={message.location.place} />
+        <LocationMessageCard place={message.location.place} note={message.location.note} />
       </>
     )
   }
@@ -23,7 +23,7 @@ export function MessageContent({ message }: { message: ChatMessage }) {
   return <p>{message.content || '...'}</p>
 }
 
-function LocationMessageCard({ place }: { place: string }) {
+function LocationMessageCard({ place, note }: { place: string; note?: string }) {
   return (
     <article className="chat-location-card" aria-label={`定位：${place}`}>
       <div className="mini-map" aria-hidden="true">
@@ -40,6 +40,7 @@ function LocationMessageCard({ place }: { place: string }) {
           <Navigation size={13} strokeWidth={2.4} />
           共享定位
         </span>
+        {note ? <em>{note}</em> : null}
       </div>
     </article>
   )

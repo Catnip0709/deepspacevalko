@@ -141,8 +141,9 @@ export function App() {
     })
   }
 
-  const sendLocationMessage = async (place: string) => {
+  const sendLocationMessage = async (place: string, note?: string) => {
     const trimmed = place.trim()
+    const trimmedNote = note?.trim()
 
     if (!trimmed || isChatting) {
       return
@@ -152,16 +153,18 @@ export function App() {
       id: createId('user-location'),
       role: 'user',
       type: 'location',
-      content: `我把定位发给你：${trimmed}`,
+      content: trimmedNote ? `我把定位发给你：${trimmed}。留言：${trimmedNote}` : `我把定位发给你：${trimmed}`,
       createdAt: getCurrentTime(),
       location: {
-        place: trimmed
+        place: trimmed,
+        note: trimmedNote || undefined
       }
     })
   }
 
-  const sendRedPacketMessage = async (amount: string) => {
+  const sendRedPacketMessage = async (amount: string, note?: string) => {
     const trimmed = amount.trim()
+    const trimmedNote = note?.trim()
 
     if (!trimmed || isChatting) {
       return
@@ -171,11 +174,11 @@ export function App() {
       id: createId('user-red-packet'),
       role: 'user',
       type: 'redPacket',
-      content: `给你发了一个 ${trimmed} 元红包。`,
+      content: trimmedNote ? `给你发了一个 ${trimmed} 元红包。留言：${trimmedNote}` : `给你发了一个 ${trimmed} 元红包。`,
       createdAt: getCurrentTime(),
       redPacket: {
         amount: trimmed,
-        note: '给敖尹的红包'
+        note: trimmedNote || '给敖尹的红包'
       }
     })
   }
@@ -575,17 +578,19 @@ function parseAssistantReply(rawText: string): Partial<ChatMessage> {
     }
   }
 
-  const locationMatch = rawText.match(/\[\[LOCATION:([^\]]+)\]\]/)
+  const locationMatch = rawText.match(/\[\[LOCATION:([^|\]]+)(?:\|([^\]]*))?\]\]/)
 
   if (locationMatch) {
     const content = rawText.replace(locationMatch[0], '').trim()
     const place = locationMatch[1].trim()
+    const note = locationMatch[2]?.trim()
 
     return {
       type: 'location',
       content: content || '位置发给你了。',
       location: {
-        place
+        place,
+        note: note || undefined
       }
     }
   }

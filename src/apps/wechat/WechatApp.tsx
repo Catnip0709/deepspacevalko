@@ -37,8 +37,8 @@ export function WechatApp({
   momentError: string
   replyingMomentIds: string[]
   onSendChatMessage: (text: string) => void
-  onSendLocationMessage: (place: string) => void
-  onSendRedPacketMessage: (amount: string) => void
+  onSendLocationMessage: (place: string, note?: string) => void
+  onSendRedPacketMessage: (amount: string, note?: string) => void
   onEditLastUserMessage: (messageId: string, text: string) => void
   onRegenerateLastAssistantMessage: (messageId: string) => void
   onClearChat: () => void

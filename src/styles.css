@@ -889,8 +889,22 @@ select {
   font-weight: 800;
 }
 
+.message-card-body em {
+  display: block;
+  overflow-wrap: anywhere;
+  color: rgba(31, 61, 43, 0.66);
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 800;
+  line-height: 1.4;
+}
+
 .chat-red-packet-card .message-card-body span {
   color: rgba(255, 249, 236, 0.78);
+}
+
+.chat-red-packet-card .message-card-body em {
+  color: rgba(255, 249, 236, 0.84);
 }
 
 .message-row.other p {

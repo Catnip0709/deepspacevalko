@@ -22,8 +22,8 @@ export function ConversationShell({
   error: string
   hasApiKey: boolean
   onSend: (text: string) => void
-  onSendLocation: (place: string) => void
-  onSendRedPacket: (amount: string) => void
+  onSendLocation: (place: string, note?: string) => void
+  onSendRedPacket: (amount: string, note?: string) => void
   onEditLastUserMessage: (messageId: string, text: string) => void
   onRegenerateLastAssistantMessage: (messageId: string) => void
   onOpenSettings: () => void
@@ -34,7 +34,9 @@ export function ConversationShell({
   const [isActionPanelOpen, setIsActionPanelOpen] = useState(false)
   const [activeActionId, setActiveActionId] = useState<WechatActionId | null>(null)
   const [locationDraft, setLocationDraft] = useState('')
+  const [locationNoteDraft, setLocationNoteDraft] = useState('')
   const [redPacketAmount, setRedPacketAmount] = useState('')
+  const [redPacketNoteDraft, setRedPacketNoteDraft] = useState('')
   const draftRef = useRef<HTMLTextAreaElement | null>(null)
   const editRef = useRef<HTMLTextAreaElement | null>(null)
   const messagesScrollRef = useRef<HTMLDivElement | null>(null)
@@ -96,8 +98,9 @@ export function ConversationShell({
       return
     }
 
-    onSendLocation(place)
+    onSendLocation(place, locationNoteDraft)
     setLocationDraft('')
+    setLocationNoteDraft('')
     closeActionPanel()
   }
 
@@ -109,8 +112,9 @@ export function ConversationShell({
       return
     }
 
-    onSendRedPacket(amount)
+    onSendRedPacket(amount, redPacketNoteDraft)
     setRedPacketAmount('')
+    setRedPacketNoteDraft('')
     closeActionPanel()
   }
 
@@ -289,6 +293,15 @@ export function ConversationShell({
                   disabled={isChatting}
                 />
               </label>
+              <label>
+                <span>留言（选填）</span>
+                <input
+                  value={locationNoteDraft}
+                  onChange={(event) => setLocationNoteDraft(event.target.value)}
+                  placeholder="例如：我在这里等你"
+                  disabled={isChatting}
+                />
+              </label>
               <button type="submit" disabled={!locationDraft.trim() || isChatting}>
                 发送定位
               </button>
@@ -307,6 +320,15 @@ export function ConversationShell({
                   onChange={(event) => setRedPacketAmount(event.target.value)}
                   placeholder="例如：52.00"
                   inputMode="decimal"
+                  disabled={isChatting}
+                />
+              </label>
+              <label>
+                <span>留言（选填）</span>
+                <input
+                  value={redPacketNoteDraft}
+                  onChange={(event) => setRedPacketNoteDraft(event.target.value)}
+                  placeholder="例如：给小狼买夜宵"
                   disabled={isChatting}
                 />
               </label>

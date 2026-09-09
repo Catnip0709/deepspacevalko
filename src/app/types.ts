@@ -10,6 +10,7 @@ export type DeepSeekModel = 'deepseek-v4-flash' | 'deepseek-v4-pro'
 
 export type ChatLocationPayload = {
   place: string
+  note?: string
 }
 
 export type ChatRedPacketPayload = {
