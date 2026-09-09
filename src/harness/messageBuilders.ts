@@ -1,9 +1,16 @@
 import type { ChatMessage, MomentAuthor } from '../app/types'
 import { aoyinPersona } from '../config/aoyinPersona'
 import type { DeepSeekChatMessage } from './deepseekClient'
+import { buildWechatToolInstructions, type WechatToolName } from './wechatTools'
 
-export function buildDeepSeekMessages(chatMessages: ChatMessage[]): DeepSeekChatMessage[] {
-  const recentMessages = chatMessages.slice(-12).map((message) => ({
+export function buildDeepSeekMessages(
+  chatMessages: ChatMessage[],
+  options?: {
+    requiredTool?: WechatToolName | null
+    isToolRetry?: boolean
+  }
+): DeepSeekChatMessage[] {
+  const conversationMessages = chatMessages.map((message) => ({
     role: message.role,
     content: formatChatMessageForModel(message)
   }))
@@ -16,26 +23,30 @@ export function buildDeepSeekMessages(chatMessages: ChatMessage[]): DeepSeekChat
         '当前场景是微信私聊。',
         '如果猎人小姐发送定位，请结合她的位置、留言和上下文自然回应。',
         '如果猎人小姐发送红包，你可以根据金额、留言、关系和上下文决定收下或拒收，并用回复说明决定。',
-        '你也可以主动给猎人小姐发送定位或红包。',
-        '如需发送定位，只输出一条回复，并在末尾单独追加：[[LOCATION:地点名称|留言]]，没有留言可省略竖线后内容。',
-        '如需发送红包，只输出一条回复，并在末尾单独追加：[[RED_PACKET:金额|留言]]。',
-        '不要解释这些标记，不要写“敖尹：”。'
+        buildWechatToolInstructions(options?.requiredTool ?? null, options?.isToolRetry)
       ].join('\n')
     },
-    ...recentMessages
+    ...conversationMessages
   ]
 }
 
 function formatChatMessageForModel(message: ChatMessage) {
   if (message.type === 'location' && message.location) {
     const note = message.location.note ? `留言：${message.location.note}。` : ''
-    return `${message.role === 'user' ? '猎人小姐' : '敖尹'}发送了定位：${message.location.place}。${note}${message.content}`
+    const action =
+      message.role === 'user'
+        ? `猎人小姐发送了定位：${message.location.place}。`
+        : `敖尹此前调用 send_location 发送了定位：${message.location.place}。`
+    return `${action}${note}${message.content}`
   }
 
   if (message.type === 'redPacket' && message.redPacket) {
-    const sender = message.role === 'user' ? '猎人小姐' : '敖尹'
+    const action =
+      message.role === 'user'
+        ? `猎人小姐发送了红包：${message.redPacket.amount}元。`
+        : `敖尹此前调用 send_red_packet 发送了红包：${message.redPacket.amount}元。`
     const note = message.redPacket.note ? `留言：${message.redPacket.note}。` : ''
-    return `${sender}发送了红包：${message.redPacket.amount}元。${note}${message.content}`
+    return `${action}${note}${message.content}`
   }
 
   return message.content

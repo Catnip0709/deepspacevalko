@@ -8,6 +8,7 @@ type StreamDeepSeekOptions = {
   model: string
   messages: DeepSeekChatMessage[]
   signal?: AbortSignal
+  temperature?: number
   onDelta: (delta: string) => void
 }
 
@@ -16,6 +17,7 @@ export async function streamDeepSeekCompletion({
   model,
   messages,
   signal,
+  temperature = 0.85,
   onDelta
 }: StreamDeepSeekOptions) {
   const response = await fetch('https://api.deepseek.com/chat/completions', {
@@ -29,7 +31,7 @@ export async function streamDeepSeekCompletion({
       model,
       messages,
       stream: true,
-      temperature: 0.85
+      temperature
     })
   })
 

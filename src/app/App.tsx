@@ -20,7 +20,8 @@ import { createId, getCurrentTime } from './time'
 import type { ChatMessage, DeepSeekModel, Moment, MomentAuthor, Screen, WechatTab } from './types'
 import { validateRedemptionCode } from '../config/redemptionCodes'
 import { normalizeDeepSeekModel } from '../config/deepseekModels'
-import { streamAoyinChatReply, streamAoyinMomentReply } from '../harness/chatHarness'
+import { requestAoyinChatReply, streamAoyinMomentReply } from '../harness/chatHarness'
+import { aoyinReplyToMessagePatch } from '../harness/wechatTools'
 import { readStoredChatMessages, writeStoredChatMessages } from '../storage/chatStore'
 import { readLocalStorage, readStoredBoolean, writeLocalStorage } from '../storage/localStorage'
 
@@ -91,35 +92,20 @@ export function App() {
     setIsChatting(true)
 
     try {
-      let receivedText = ''
-
-      await streamAoyinChatReply({
+      const reply = await requestAoyinChatReply({
         apiKey,
         model: selectedModel,
-        chatMessages: [...chatMessages, userMessage],
-        onDelta: (delta) => {
-          receivedText += delta
-          setChatMessages((current) =>
-            current.map((message) =>
-              message.id === assistantMessage.id ? { ...message, content: message.content + delta } : message
-            )
-          )
-        }
+        chatMessages: [...chatMessages, userMessage]
       })
-
-      const parsedReply = parseAssistantReply(receivedText)
+      const messagePatch = aoyinReplyToMessagePatch(reply)
 
       setChatMessages((current) =>
-        current.map((message) => (message.id === assistantMessage.id ? { ...message, ...parsedReply } : message))
+        current.map((message) => (message.id === assistantMessage.id ? { ...message, ...messagePatch } : message))
       )
     } catch (error) {
       const message = error instanceof Error ? error.message : 'DeepSeek 请求失败，请稍后再试。'
       setChatError(message)
-      setChatMessages((current) =>
-        current.map((item) =>
-          item.id === assistantMessage.id ? { ...item, content: `消息没有发出去：${message}` } : item
-        )
-      )
+      setChatMessages((current) => current.filter((item) => item.id !== assistantMessage.id))
     } finally {
       setIsChatting(false)
     }
@@ -183,7 +169,11 @@ export function App() {
     })
   }
 
-  const regenerateAssistantMessage = async (messagesForPrompt: ChatMessage[], assistantMessageId: string) => {
+  const regenerateAssistantMessage = async (
+    messagesForPrompt: ChatMessage[],
+    assistantMessageId: string,
+    previousMessage?: ChatMessage
+  ) => {
     if (!apiKey) {
       setChatError('请先到设置里填写 DeepSeek API Key。')
       setScreen('settings')
@@ -194,34 +184,23 @@ export function App() {
     setIsChatting(true)
 
     try {
-      let receivedText = ''
-
-      await streamAoyinChatReply({
+      const reply = await requestAoyinChatReply({
         apiKey,
         model: selectedModel,
-        chatMessages: messagesForPrompt,
-        onDelta: (delta) => {
-          receivedText += delta
-          setChatMessages((current) =>
-            current.map((message) =>
-              message.id === assistantMessageId ? { ...message, content: message.content + delta } : message
-            )
-          )
-        }
+        chatMessages: messagesForPrompt
       })
-
-      const parsedReply = parseAssistantReply(receivedText)
+      const messagePatch = aoyinReplyToMessagePatch(reply)
 
       setChatMessages((current) =>
-        current.map((message) => (message.id === assistantMessageId ? { ...message, ...parsedReply } : message))
+        current.map((message) => (message.id === assistantMessageId ? { ...message, ...messagePatch } : message))
       )
     } catch (error) {
       const message = error instanceof Error ? error.message : 'DeepSeek 请求失败，请稍后再试。'
       setChatError(message)
       setChatMessages((current) =>
-        current.map((item) =>
-          item.id === assistantMessageId ? { ...item, content: `消息没有发出去：${message}` } : item
-        )
+        previousMessage
+          ? current.map((item) => (item.id === assistantMessageId ? previousMessage : item))
+          : current.filter((item) => item.id !== assistantMessageId)
       )
     } finally {
       setIsChatting(false)
@@ -297,9 +276,19 @@ export function App() {
     }
 
     setChatMessages((current) =>
-      current.map((message) => (message.id === messageId ? { ...message, content: '' } : message))
+      current.map((message) =>
+        message.id === messageId
+          ? {
+              ...message,
+              type: 'text',
+              content: '',
+              location: undefined,
+              redPacket: undefined
+            }
+          : message
+      )
     )
-    void regenerateAssistantMessage(messagesForPrompt, messageId)
+    void regenerateAssistantMessage(messagesForPrompt, messageId, chatMessages[assistantIndex])
   }
 
   const clearChatMessages = () => {
@@ -558,45 +547,4 @@ function findLastMessageIndex(messages: ChatMessage[], role: ChatMessage['role']
   }
 
   return -1
-}
-
-function parseAssistantReply(rawText: string): Partial<ChatMessage> {
-  const redPacketMatch = rawText.match(/\[\[RED_PACKET:([^|\]]+)(?:\|([^\]]*))?\]\]/)
-
-  if (redPacketMatch) {
-    const content = rawText.replace(redPacketMatch[0], '').trim()
-    const amount = redPacketMatch[1].trim()
-    const note = redPacketMatch[2]?.trim()
-
-    return {
-      type: 'redPacket',
-      content: content || '给你发了一个红包。',
-      redPacket: {
-        amount,
-        note: note || '给小铃兰的红包'
-      }
-    }
-  }
-
-  const locationMatch = rawText.match(/\[\[LOCATION:([^|\]]+)(?:\|([^\]]*))?\]\]/)
-
-  if (locationMatch) {
-    const content = rawText.replace(locationMatch[0], '').trim()
-    const place = locationMatch[1].trim()
-    const note = locationMatch[2]?.trim()
-
-    return {
-      type: 'location',
-      content: content || '位置发给你了。',
-      location: {
-        place,
-        note: note || undefined
-      }
-    }
-  }
-
-  return {
-    type: 'text',
-    content: rawText.trim() || '我在。'
-  }
 }
