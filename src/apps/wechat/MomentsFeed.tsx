@@ -1,7 +1,8 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { Trees } from 'lucide-react'
 import type { Moment } from '../../app/types'
 import { AoyinAvatar, AoyinMiniAvatar, HunterAvatar, HunterMiniAvatar } from '../../components/avatars'
+import { formatMomentTime } from './momentTime'
 
 export function MomentsFeed({
   moments,
@@ -20,6 +21,11 @@ export function MomentsFeed({
 }) {
   const [draft, setDraft] = useState('')
   const [replyDrafts, setReplyDrafts] = useState<Record<string, string>>({})
+  const feedRef = useRef<HTMLElement>(null)
+  const firstId = moments[0]?.id
+  useEffect(() => {
+    feedRef.current?.scrollTo({ top: 0, behavior: 'smooth' })
+  }, [firstId])
 
   const submitMoment = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -46,7 +52,7 @@ export function MomentsFeed({
   }
 
   return (
-    <section className="moments-feed" aria-label="朋友圈列表">
+    <section ref={feedRef} className="moments-feed" aria-label="朋友圈列表">
       <form className="moment-composer" onSubmit={submitMoment} aria-label="发布朋友圈">
         <HunterAvatar />
         <div className="moment-composer-body">
@@ -67,14 +73,16 @@ export function MomentsFeed({
           </button>
         </div>
       </form>
-      {momentError ? <p className="moment-error">{momentError}</p> : null}
+      {momentError ? <p className="moment-error" role="alert">{momentError}</p> : null}
       {moments.map((item) => (
         <article className="moment-card" key={item.id}>
           {item.author === 'aoyin' ? <AoyinAvatar /> : <HunterAvatar />}
           <div className="moment-body">
             <div className="moment-title">
               <span>{item.author === 'hunter' ? hunterName : item.authorName}</span>
-              <time>{item.time}</time>
+              <time dateTime={item.createdAt ? new Date(item.createdAt).toISOString() : undefined}>
+                {formatMomentTime(item)}
+              </time>
             </div>
             <p>{item.text}</p>
             {item.replies.length > 0 ? (

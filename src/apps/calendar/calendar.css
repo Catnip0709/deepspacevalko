@@ -1,0 +1,226 @@
+.calendar-shell {
+  position: absolute;
+  inset: 48px 0 0;
+  display: flex;
+  flex-direction: column;
+  color: var(--forest-900);
+  background: rgba(250, 253, 251, 0.96);
+  letter-spacing: 0;
+}
+
+.calendar-topbar {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) 40px;
+  align-items: center;
+  padding: 12px 18px;
+  border-bottom: 1px solid rgba(63, 125, 74, 0.08);
+}
+
+.calendar-topbar h2 {
+  margin: 0;
+  text-align: center;
+  font-size: 18px;
+}
+
+.calendar-content {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 16px 18px 24px;
+}
+
+.calendar-month-navigation {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr) 36px;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.calendar-month-navigation input {
+  width: 100%;
+  min-width: 0;
+  height: 42px;
+  padding: 4px 8px;
+  text-align: center;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--forest-900);
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.calendar-weekdays,
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.calendar-weekdays {
+  margin-bottom: 10px;
+  text-align: center;
+  font-size: 12px;
+  color: #74807a;
+}
+
+.calendar-weekdays span:nth-last-child(-n+2) { color: #af6670; }
+.calendar-grid { grid-auto-rows: 42px; }
+
+.calendar-day {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  min-width: 0;
+  padding: 3px 0;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+}
+
+.calendar-day:hover { background: var(--mist-100); }
+.calendar-day[aria-current="date"] { border-color: var(--forest-500); font-weight: 700; }
+.calendar-day.selected { background: var(--forest-700); color: white; }
+.calendar-day i { width: 4px; height: 4px; border-radius: 50%; background: transparent; }
+.calendar-day.marked i { background: var(--berry); }
+.calendar-day.selected.marked i { background: white; }
+
+.calendar-editor {
+  margin-top: 22px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(63, 125, 74, 0.14);
+}
+
+.calendar-editor header,
+.calendar-editor footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 40px;
+}
+
+.calendar-editor h3 { margin: 0; font-size: 15px; }
+.calendar-editor label { display: block; font-size: 12px; color: #74807a; margin: 8px 0; }
+.calendar-editor input {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid rgba(63, 125, 74, 0.18);
+  border-radius: 8px;
+  color: var(--forest-900);
+  background: white;
+  font-size: 16px;
+}
+.calendar-editor footer { margin-top: 12px; }
+.calendar-editor [role="status"] { font-size: 12px; color: var(--forest-700); }
+.calendar-save {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 8px 18px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--forest-700);
+  color: white;
+}
+
+.calendar-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  flex-shrink: 0;
+  padding: 10px 18px max(14px, env(safe-area-inset-bottom));
+  border-top: 1px solid rgba(63, 125, 74, 0.12);
+  background: var(--mist-100);
+}
+.calendar-tabs button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 42px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #75837a;
+  font-size: 14px;
+}
+.calendar-tabs button[aria-pressed="true"] {
+  color: var(--forest-900);
+  background: white;
+  box-shadow: 0 3px 10px rgba(31, 61, 43, 0.06);
+}
+.calendar-today { margin: 2px 0 20px; font-size: 12px; color: #74807a; }
+.calendar-empty { padding: 60px 0; text-align: center; color: #74807a; font-size: 14px; }
+.calendar-anniversary {
+  width: 100%;
+  margin-bottom: 12px;
+  padding: 18px 12px;
+  border: 1px solid #e8e5e6;
+  border-radius: 8px;
+  background: #fffafb;
+  text-align: left;
+  color: var(--forest-900);
+}
+.calendar-anniversary-summary {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr) 84px;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+}
+.calendar-anniversary-summary > svg { color: #b87580; }
+.calendar-anniversary.future { background: #f5fafc; border-color: #dee9ed; }
+.calendar-anniversary.future .calendar-anniversary-summary > svg { color: #658799; }
+.calendar-note {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(116, 128, 122, 0.14);
+  font-size: 13px;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+.calendar-note p { margin: 0; }
+.calendar-note strong { font-weight: 600; }
+.calendar-note-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  margin-top: 6px;
+  padding: 4px 0;
+  border: 0;
+  background: transparent;
+  color: var(--forest-700);
+  font-size: 12px;
+}
+.calendar-anniversary-info { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.calendar-anniversary-info strong { font-size: 15px; overflow-wrap: anywhere; }
+.calendar-anniversary-info time { font-size: 11px; color: #74807a; overflow-wrap: anywhere; }
+.calendar-day-count { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: flex-end; gap: 3px; }
+.calendar-day-count span { font-size: 11px; color: #74807a; }
+.calendar-day-count > span:first-child { width: 100%; text-align: right; }
+.calendar-day-count b { font-size: 25px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.calendar-day-count b.calendar-long-count { font-size: 16px; }
+.calendar-day-count .calendar-is-today { font-size: 14px; color: #af6670; }
+.calendar-error { color: #a44949; font-size: 13px; overflow-wrap: anywhere; }
+.calendar-shell button { cursor: pointer; }
+.calendar-shell button:disabled { opacity: 0.4; cursor: default; }
+.calendar-shell :focus-visible { outline: 2px solid #658799; outline-offset: 2px; }

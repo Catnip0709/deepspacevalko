@@ -1836,6 +1836,23 @@ select {
   padding-bottom: 118px;
 }
 
+.moment-post-spinner {
+  animation: moment-post-spin 1s linear infinite;
+}
+
+@keyframes moment-post-spin {
+  to { transform: rotate(360deg); }
+}
+
+.moment-title {
+  flex-wrap: wrap;
+}
+
+.moment-title time {
+  flex-shrink: 0;
+  font-size: 11px;
+}
+
 .moment-error {
   margin: -2px 4px 0;
   padding: 9px 11px;

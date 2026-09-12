@@ -13,7 +13,7 @@ Valkophone 是一个纯前端同人手机网站，部署在 GitHub Pages。用�
 当前产品边界：
 
 - 首屏是猎人小姐手机桌面。
-- 桌面 App 包含：微信、波万、他的手机、便签、设置。
+- 桌面 App 包含：微信、波万、日历、他的手机、便签、设置。
 - 桌面 App 上方有“临空市天气”小组件。
 - 微信属于猎人小姐。
 - 微信底部 tab 只有：`聊天`、`朋友圈`。
@@ -149,6 +149,7 @@ App 内部状态适合放：
 - 表单输入草稿。
 - 小组件点击状态。
 - 波万养宠状态与动作菜单。
+- 日历当前月份、选中日期、纪念日与编辑草稿，统一放在 `src/apps/calendar/`。
 
 不要把所有状态都塞进顶层 `App`。如果一个状态只服务某个组件，就留在该组件内部。
 
@@ -161,8 +162,12 @@ App 内部状态适合放：
 - 默认角色人设、不可修改的敖尹核心设定、Prompt 构造：`src/config/aoyinPersona.ts`
 - 用户自定义人设存储：`src/storage/personaStore.ts`
 - 波万状态读写：`src/storage/petStore.ts`
-- 初始朋友圈内容：后续应迁移到 `src/apps/wechat/momentsData.ts`
-- 朋友圈 AI 回复 prompt：后续应迁移到 `src/apps/wechat/momentPrompts.ts`
+- 日历纪念日读写：`src/storage/calendarStore.ts`，key 为 `valkophoneCalendar:v1`。日期保存为本地 `YYYY-MM-DD`，天数按自然日计算，不按24小时或每年周年计算。
+- 日历从2026年1月开始，每个日期一个纪念日；首次添加 `2026-06-22 初见`，删除后不得重新补回。当天算0天，未来展示剩余天数。
+- 用户新增纪念日保存成功后，通过 `src/harness/anniversaryNoteHarness.ts` 请求敖尹留言，使用当前双方人设和纪念日名称、日期。留言保存在可选字段 `aoyinNote`，旧存档兼容；无 Key 不请求，失败可在纪念日页补写。改名清除旧留言，不自动重发；删除、改名或离开 App 时取消未完成请求，默认和旧记录不自动批量生成。
+- 初始朋友圈内容：`src/apps/wechat/momentsData.ts`
+- 朋友圈生成规则：`src/apps/wechat/momentPrompts.ts`；发圈上下文和协议校验：`src/harness/momentContextBuilder.ts`、`src/harness/momentPostHarness.ts`
+- 朋友圈存储：`src/storage/momentStore.ts`，使用 `valkophoneMoments:v1`，只持久化已完成的评论。
 - 桌面便签内容：后续应迁移到 `src/desktop/stickyNote.ts`
 - 天气状态和 oi 提醒：后续应迁移到 `src/desktop/WeatherWidget.tsx` 或 `src/desktop/weatherData.ts`
 - 设置页说明文案：`src/apps/settings/` 下对应子页面
@@ -214,6 +219,7 @@ Prompt 规则：
 - 不要在界面展示 system prompt。
 - 微信聊天使用人设 + 完整聊天上下文；达到模型上下文上限前不要自行截断。
 - 朋友圈回复使用场景化短 prompt，只生成一条短评论。
+- 敖尹发朋友圈由用户点击右上角按钮触发，提供完整聊天和朋友圈记录；不做后台自动请求。输出通过 JSON 校验和重复检测后才发布，无效结果最多重试一次。
 - 不要让模型输出“敖尹：”这种前缀，UI 会负责展示说话人。
 - 定位、红包等微信能力统一通过 `src/harness/` 下的伪工具注册、结构化协议和参数校验实现，不要在 UI 或 `App.tsx` 中解析特殊文本标记。
 
@@ -315,6 +321,7 @@ GiftBoxApp
 - 模型选择
 - 聊天记录
 - 波万状态与照料记录
+- 日历纪念日
 - 简单 UI 偏好
 
 不适合 localStorage 的数据：

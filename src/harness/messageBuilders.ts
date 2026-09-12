@@ -69,7 +69,7 @@ export function buildMomentReplyMessages({
   const hunterName = persona.hunter.name
   const scene =
     sourceAuthor === 'hunter'
-      ? `${hunterName}刚刚发了一条朋友圈：“${sourceText}”。`
+      ? `${hunterName}发了一条朋友圈：“${sourceText}”。${hunterComment ? `她补充评论：“${hunterComment}”。请回应这条补充。` : ''}`
       : `${fixedAoyinProfile.name}之前发了一条朋友圈：“${sourceText}”。${hunterName}评论：“${hunterComment ?? ''}”。`
 
   return [

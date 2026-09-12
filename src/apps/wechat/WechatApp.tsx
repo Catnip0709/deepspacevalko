@@ -1,4 +1,4 @@
-import { ArrowLeft, Bell, Camera, MessageCircle, Trash2 } from 'lucide-react'
+import { ArrowLeft, Feather, LoaderCircle, Camera, MessageCircle, Trash2 } from 'lucide-react'
 import type { ChatMessage, Moment, PersonaSettings, WechatTab } from '../../app/types'
 import { ConversationShell } from './ConversationShell'
 import { MomentsFeed } from './MomentsFeed'
@@ -14,6 +14,8 @@ export function WechatApp({
   onBackHome,
   onChangeTab,
   onPublishMoment,
+  onPublishAoyinMoment,
+  isPostingMoment,
   onReplyToMoment,
   momentError,
   replyingMomentIds,
@@ -35,6 +37,8 @@ export function WechatApp({
   onBackHome: () => void
   onChangeTab: (tab: WechatTab) => void
   onPublishMoment: (text: string) => Promise<void>
+  onPublishAoyinMoment: () => Promise<void>
+  isPostingMoment: boolean
   onReplyToMoment: (momentId: string, text: string) => Promise<void>
   momentError: string
   replyingMomentIds: string[]
@@ -50,6 +54,12 @@ export function WechatApp({
   const clearChatWithConfirmation = () => {
     if (window.confirm('确认清空和敖尹的聊天记录吗？')) {
       onClearChat()
+    }
+  }
+  const publishMomentWithConfirmation = () => {
+    if (isPostingMoment) return
+    if (window.confirm('确认让敖尹根据聊天和朋友圈记录发一条新朋友圈吗？')) {
+      void onPublishAoyinMoment()
     }
   }
 
@@ -75,8 +85,18 @@ export function WechatApp({
             <Trash2 size={19} strokeWidth={2.3} />
           </button>
         ) : (
-          <button className="icon-button ghost" type="button" aria-label="微信通知">
-            <Bell size={19} strokeWidth={2.3} />
+          <button
+            className="icon-button ghost"
+            type="button"
+            aria-label={isPostingMoment ? '敖尹正在写朋友圈' : '让敖尹发朋友圈'}
+            title={isPostingMoment ? '敖尹正在写朋友圈' : '让敖尹发朋友圈'}
+            aria-busy={isPostingMoment}
+            disabled={isPostingMoment}
+            onClick={publishMomentWithConfirmation}
+          >
+            {isPostingMoment
+              ? <LoaderCircle className="moment-post-spinner" size={19} strokeWidth={2.3} />
+              : <Feather size={19} strokeWidth={2.3} />}
           </button>
         )}
       </header>

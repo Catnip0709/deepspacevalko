@@ -4,9 +4,10 @@ import { Desktop } from '../desktop/Desktop'
 import { StickyNoteModal } from '../desktop/StickyNoteModal'
 import { HisPhoneApp } from '../apps/his-phone/HisPhoneApp'
 import { PetApp } from '../apps/pet/PetApp'
+import { CalendarApp } from '../apps/calendar/CalendarApp'
 import { SettingsApp } from '../apps/settings/SettingsApp'
 import { initialChatMessages } from '../apps/wechat/chatData'
-import { initialMoments } from '../apps/wechat/momentsData'
+import { useMomentPost } from '../apps/wechat/useMomentPost'
 import { WechatApp } from '../apps/wechat/WechatApp'
 import { maskRedemptionCode } from './masking'
 import {
@@ -34,11 +35,12 @@ import { aoyinReplyToMessagePatch } from '../harness/wechatTools'
 import { readStoredChatMessages, writeStoredChatMessages } from '../storage/chatStore'
 import { readLocalStorage, readStoredBoolean, writeLocalStorage } from '../storage/localStorage'
 import { readStoredPersonaSettings, writeStoredPersonaSettings } from '../storage/personaStore'
+import { readStoredMoments, writeStoredMoments } from '../storage/momentStore'
 
 export function App() {
   const [screen, setScreen] = useState<Screen>('desktop')
   const [wechatTab, setWechatTab] = useState<WechatTab>('chats')
-  const [moments, setMoments] = useState<Moment[]>(initialMoments)
+  const [moments, setMoments] = useState<Moment[]>(readStoredMoments)
   const [isNoteOpen, setIsNoteOpen] = useState(false)
   const [apiKey, setApiKey] = useState(() => readLocalStorage(apiKeyStorageKey))
   const [isUnlocked, setIsUnlocked] = useState(() => readStoredBoolean(unlockStorageKey))
@@ -51,6 +53,15 @@ export function App() {
   const [chatError, setChatError] = useState('')
   const [momentError, setMomentError] = useState('')
   const [replyingMomentIds, setReplyingMomentIds] = useState<string[]>([])
+  const [momentStorageError, setMomentStorageError] = useState('')
+  const { isPosting, postError, publishAoyinMoment } = useMomentPost({
+    apiKey, model: selectedModel, chatMessages, moments, persona: personaSettings,
+    setMoments, onOpenSettings: () => setScreen('settings')
+  })
+
+  useEffect(() => {
+    setMomentStorageError(writeStoredMoments(moments) ? '' : '朋友圈未能保存到本机，请检查浏览器存储空间。')
+  }, [moments])
 
   useEffect(() => {
     writeStoredChatMessages(chatMessages)
@@ -388,23 +399,14 @@ export function App() {
             : moment
         )
       )
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'DeepSeek 请求失败，请稍后再试。'
-      setMomentError(message)
+    } catch {
+      setMomentError('评论没有发送成功，请检查网络和 API Key 后再试。')
       setMoments((current) =>
         current.map((moment) =>
           moment.id === momentId
             ? {
                 ...moment,
-                replies: moment.replies.map((reply) =>
-                  reply.id === replyId
-                    ? {
-                        ...reply,
-                        text: `回复没有生成：${message}`,
-                        pending: false
-                      }
-                    : reply
-                )
+                replies: moment.replies.filter((reply) => reply.id !== replyId)
               }
             : moment
         )
@@ -415,6 +417,10 @@ export function App() {
   }
 
   const publishMoment = async (text: string) => {
+    if (!apiKey) {
+      setScreen('settings')
+      return
+    }
     const momentId = createId('hunter-moment')
     const replyId = createId('aoyin-reply')
     const newMoment: Moment = {
@@ -422,6 +428,7 @@ export function App() {
       author: 'hunter',
       authorName: personaSettings.hunter.name,
       time: getCurrentTime(),
+      createdAt: Date.now(),
       text,
       replies: [
         {
@@ -444,6 +451,10 @@ export function App() {
   }
 
   const replyToMoment = async (momentId: string, text: string) => {
+    if (!apiKey) {
+      setScreen('settings')
+      return
+    }
     const targetMoment = moments.find((moment) => moment.id === momentId)
 
     if (!targetMoment) {
@@ -519,6 +530,7 @@ export function App() {
           ownerName={personaSettings.hunter.name}
           openWechat={openWechat}
           openPet={() => setScreen('pet')}
+          openCalendar={() => setScreen('calendar')}
           openSettings={openSettings}
           openHisPhone={openHisPhone}
           openNote={() => setIsNoteOpen(true)}
@@ -537,8 +549,10 @@ export function App() {
           onBackHome={returnHome}
           onChangeTab={setWechatTab}
           onPublishMoment={publishMoment}
+          onPublishAoyinMoment={publishAoyinMoment}
+          isPostingMoment={isPosting}
           onReplyToMoment={replyToMoment}
-          momentError={momentError}
+          momentError={[postError, momentError, momentStorageError].filter(Boolean).join(' ')}
           replyingMomentIds={replyingMomentIds}
           onSendChatMessage={sendChatMessage}
           onSendLocationMessage={sendLocationMessage}
@@ -566,6 +580,11 @@ export function App() {
       {screen === 'hisPhone' ? <HisPhoneApp onBackHome={returnHome} /> : null}
 
       {screen === 'pet' ? <PetApp hunterName={personaSettings.hunter.name} onBackHome={returnHome} /> : null}
+
+      {screen === 'calendar' ? (
+        <CalendarApp onBackHome={returnHome} onOpenSettings={openSettings}
+          apiKey={apiKey} model={selectedModel} persona={personaSettings} />
+      ) : null}
 
       {isNoteOpen ? <StickyNoteModal onClose={() => setIsNoteOpen(false)} /> : null}
     </PhoneFrame>

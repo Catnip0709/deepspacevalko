@@ -1,6 +1,6 @@
 import type { LucideIcon } from 'lucide-react'
 
-export type Screen = 'desktop' | 'wechat' | 'settings' | 'hisPhone' | 'pet'
+export type Screen = 'desktop' | 'wechat' | 'settings' | 'hisPhone' | 'pet' | 'calendar'
 export type WechatTab = 'chats' | 'moments'
 export type SettingsView = 'list' | 'unlock' | 'deepseek' | 'aoyinPersona' | 'hunterPersona'
 export type MomentAuthor = 'aoyin' | 'hunter'
@@ -64,6 +64,7 @@ export type Moment = {
   author: MomentAuthor
   authorName: string
   time: string
+  createdAt?: number
   text: string
   replies: MomentReply[]
 }
