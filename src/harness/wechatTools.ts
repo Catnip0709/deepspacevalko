@@ -1,5 +1,6 @@
 import type { ChatMessage, PersonaSettings } from '../app/types'
 import { fixedAoyinProfile } from '../config/aoyinPersona'
+import type { DeepSeekStrictTool } from './deepseekClient'
 
 export type WechatToolName = 'send_location' | 'send_red_packet'
 
@@ -24,95 +25,104 @@ export type AoyinChatReply = {
   toolCall: WechatToolCall | null
 }
 
-type WechatToolDefinition = {
-  name: WechatToolName
-  description: string
-  parameters: Record<string, string>
-  required: string[]
+export class WechatProtocolError extends Error {
+  constructor(
+    public readonly code: 'json' | 'reply' | 'tool' | 'arguments' | 'missing_tool',
+    public readonly repairMessage: string
+  ) {
+    super({
+      json: '回复格式暂时异常，请再试一次。',
+      reply: '敖尹这次没有发来内容，请再试一次。',
+      tool: '这次附带的定位或红包没能发送，请再试一次。',
+      arguments: '这次附带的定位或红包内容不完整，请再试一次。',
+      missing_tool: '这次定位或红包没有发出，请再试一次。'
+    }[code])
+  }
 }
 
-export const wechatTools: WechatToolDefinition[] = [
-  {
-    name: 'send_location',
-    description: '向对方发送自己的定位。对方明确要求发送定位或位置时必须调用。',
-    parameters: {
-      place: '定位地点名称，必须具体且非空',
-      note: '随定位附带的简短留言，可选'
-    },
-    required: ['place']
-  },
-  {
-    name: 'send_red_packet',
-    description: '向对方发送红包。对方明确要求发红包时必须调用。',
-    parameters: {
-      amount: '红包金额，使用大于 0 的数字字符串，最多两位小数',
-      note: '红包留言，可选'
-    },
-    required: ['amount']
-  }
-]
-
-export function buildWechatToolInstructions(
+export function buildWechatResponseTool(
   requiredTool: WechatToolName | null,
-  persona: PersonaSettings,
-  isRetry = false
-) {
+  persona: PersonaSettings
+): DeepSeekStrictTool {
   const hunterName = persona.hunter.name
   const hunterNickname = persona.hunter.nicknameFromAoyin || hunterName
-  const definitions = wechatTools
-    .map(
-      (tool) =>
-        `- ${tool.name}：${tool.description}\n  参数：${JSON.stringify(tool.parameters)}\n  必填：${tool.required.join('、')}`
-    )
-    .join('\n')
-  const requiredInstruction = requiredTool
-    ? `${hunterName}这次明确要求使用 ${requiredTool}。toolCall 不得为 null，必须调用该工具。`
-    : '仅在场景自然需要时调用工具；不需要工具时 toolCall 必须为 null。'
-  const retryInstruction = isRetry
-    ? '上一次输出没有通过协议校验。这次必须严格遵守 JSON 格式、工具名和参数要求。'
-    : ''
-  const textReplyExample = JSON.stringify({
-    reply: `给${hunterName}看的自然回复`,
-    toolCall: null
-  })
-  const locationExample = JSON.stringify({
-    reply: '站着别动，我的位置发你。',
-    toolCall: {
-      name: 'send_location',
-      arguments: {
-        place: '临空市猎人协会东门',
-        note: '我来接你'
-      }
+  const noneAction = strictObject({
+    type: {
+      type: 'string',
+      enum: ['none'],
+      description: '只发送普通文字消息，不附带卡片。'
     }
   })
-  const redPacketExample = JSON.stringify({
-    reply: '拿去买你刚才念叨的那杯。',
-    toolCall: {
-      name: 'send_red_packet',
-      arguments: {
-        amount: '52.00',
-        note: `给${hunterNickname}`
-      }
+  const locationAction = strictObject({
+    type: {
+      type: 'string',
+      enum: ['location'],
+      description: '发送定位卡片。'
+    },
+    place: {
+      type: 'string',
+      description: '具体且非空的定位地点名称。'
+    },
+    note: {
+      type: 'string',
+      description: '定位卡片留言；不需要留言时使用空字符串。'
     }
   })
+  const redPacketAction = strictObject({
+    type: {
+      type: 'string',
+      enum: ['red_packet'],
+      description: '发送红包卡片。'
+    },
+    amount: {
+      type: 'string',
+      pattern: '^(?:0\\.(?:0[1-9]|[1-9]\\d?)|[1-9]\\d*(?:\\.\\d{1,2})?)$',
+      description: '大于0、最多两位小数的数字字符串，例如52.00。'
+    },
+    note: {
+      type: 'string',
+      description: `红包留言；不需要时使用“给${hunterNickname}”。`
+    }
+  })
+  const action = requiredTool === 'send_location'
+    ? locationAction
+    : requiredTool === 'send_red_packet'
+      ? redPacketAction
+      : { anyOf: [noneAction, locationAction, redPacketAction] }
 
-  return [
-    '你可以使用以下微信工具：',
-    definitions,
-    requiredInstruction,
-    retryInstruction,
-    '每次只能调用一个工具。',
-    '必须只输出一个合法 JSON 对象，不要使用 Markdown，不要添加 JSON 之外的文字。',
-    '固定响应结构：',
-    textReplyExample,
-    '调用定位示例：',
-    locationExample,
-    '调用红包示例：',
-    redPacketExample,
-    `reply 里不要提到工具、JSON、协议或调用过程，也不要写“${fixedAoyinProfile.name}：”。`
-  ]
-    .filter(Boolean)
-    .join('\n')
+  return {
+    type: 'function',
+    function: {
+      name: 'deliver_wechat_response',
+      strict: true,
+      description: [
+        `提交${fixedAoyinProfile.name}给${hunterName}的本轮微信回复。`,
+        '必须调用且只能调用一次。',
+        'reply 是自然聊天正文，不得提到函数、协议或调用过程，也不要添加说话人前缀。',
+        requiredTool === 'send_location'
+          ? '对方明确索要定位，本轮必须发送 location。'
+          : requiredTool === 'send_red_packet'
+            ? '对方明确索要红包，本轮必须发送 red_packet。'
+            : '仅在上下文自然需要时附带定位或红包，否则使用 none。'
+      ].join(''),
+      parameters: strictObject({
+        reply: {
+          type: 'string',
+          description: '自然、可独立理解的微信回复。发送卡片时可以为空字符串，否则必须有内容。'
+        },
+        action
+      })
+    }
+  }
+}
+
+function strictObject(properties: Record<string, unknown>) {
+  return {
+    type: 'object',
+    properties,
+    required: Object.keys(properties),
+    additionalProperties: false
+  }
 }
 
 export function detectRequiredWechatTool(
@@ -173,69 +183,69 @@ function isWechatToolRequested(text: string, targetPattern: string, assistantPat
   return requestPatterns.some((pattern) => pattern.test(text))
 }
 
-export function parseWechatToolResponse(rawText: string, requiredTool: WechatToolName | null): AoyinChatReply {
-  const payload = parseJsonObject(rawText)
-  const reply = readNonEmptyString(payload.reply)
-  const rawToolCall = payload.toolCall
+export function parseWechatResponseArguments(
+  value: unknown,
+  requiredTool: WechatToolName | null
+): AoyinChatReply {
+  if (!isRecord(value)) {
+    throw new WechatProtocolError('json', '函数参数必须是一个对象。')
+  }
+  if (typeof value.reply !== 'string') {
+    throw new WechatProtocolError('reply', 'reply 必须是字符串。')
+  }
+  if (!isRecord(value.action) || typeof value.action.type !== 'string') {
+    throw new WechatProtocolError('tool', 'action 必须是有效的微信动作。')
+  }
 
-  if (rawToolCall === null || rawToolCall === undefined) {
+  const reply = value.reply.trim()
+  const action = value.action
+  if (action.type === 'none') {
     if (requiredTool) {
-      throw new Error(`模型没有调用必需工具 ${requiredTool}`)
+      throw new WechatProtocolError('missing_tool', `本轮必须执行 ${requiredTool}。`)
     }
-
-    return {
-      reply,
-      toolCall: null
+    if (!reply) {
+      throw new WechatProtocolError('reply', '普通聊天的 reply 不能为空。')
     }
+    return { reply, toolCall: null }
   }
 
-  if (!isRecord(rawToolCall)) {
-    throw new Error('toolCall 必须是对象或 null')
-  }
-
-  const name = rawToolCall.name
-
-  if (name !== 'send_location' && name !== 'send_red_packet') {
-    throw new Error('模型返回了未知微信工具')
-  }
-
-  if (requiredTool && name !== requiredTool) {
-    throw new Error(`模型没有调用必需工具 ${requiredTool}`)
-  }
-
-  if (!isRecord(rawToolCall.arguments)) {
-    throw new Error('工具 arguments 必须是对象')
-  }
-
-  if (name === 'send_location') {
+  if (action.type === 'location') {
+    if (requiredTool === 'send_red_packet') {
+      throw new WechatProtocolError('missing_tool', '本轮必须发送红包。')
+    }
     return {
       reply,
       toolCall: {
-        name,
+        name: 'send_location',
         arguments: {
-          place: readNonEmptyString(rawToolCall.arguments.place),
-          note: readOptionalString(rawToolCall.arguments.note)
+          place: readNonEmptyString(action.place),
+          note: readOptionalString(action.note)
         }
       }
     }
   }
 
-  const amount = readNonEmptyString(rawToolCall.arguments.amount)
-
-  if (!/^\d+(?:\.\d{1,2})?$/.test(amount) || Number(amount) <= 0) {
-    throw new Error('红包金额必须是大于 0 且最多两位小数的数字')
-  }
-
-  return {
-    reply,
-    toolCall: {
-      name,
-      arguments: {
-        amount,
-        note: readOptionalString(rawToolCall.arguments.note)
+  if (action.type === 'red_packet') {
+    if (requiredTool === 'send_location') {
+      throw new WechatProtocolError('missing_tool', '本轮必须发送定位。')
+    }
+    const amount = readNonEmptyString(action.amount)
+    if (!/^\d+(?:\.\d{1,2})?$/.test(amount) || !Number.isFinite(Number(amount)) || Number(amount) <= 0) {
+      throw new WechatProtocolError('arguments', '红包金额必须大于0且最多两位小数。')
+    }
+    return {
+      reply,
+      toolCall: {
+        name: 'send_red_packet',
+        arguments: {
+          amount,
+          note: readOptionalString(action.note)
+        }
       }
     }
   }
+
+  throw new WechatProtocolError('tool', '未知的微信动作。')
 }
 
 export function aoyinReplyToMessagePatch(
@@ -275,30 +285,9 @@ function escapeRegExp(value: string) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
-function parseJsonObject(rawText: string): Record<string, unknown> {
-  const normalized = rawText
-    .trim()
-    .replace(/^```(?:json)?\s*/i, '')
-    .replace(/\s*```$/, '')
-  const start = normalized.indexOf('{')
-  const end = normalized.lastIndexOf('}')
-
-  if (start < 0 || end <= start) {
-    throw new Error('模型没有返回 JSON 对象')
-  }
-
-  const parsed: unknown = JSON.parse(normalized.slice(start, end + 1))
-
-  if (!isRecord(parsed)) {
-    throw new Error('模型响应必须是 JSON 对象')
-  }
-
-  return parsed
-}
-
 function readNonEmptyString(value: unknown) {
   if (typeof value !== 'string' || !value.trim()) {
-    throw new Error('工具响应缺少必填文本字段')
+    throw new WechatProtocolError('arguments', '必填文本参数缺失或为空，请检查 place/amount。')
   }
 
   return value.trim()
