@@ -1,4 +1,12 @@
-import { CalendarDays, MessageCircle, Newspaper, NotebookPen, PawPrint, Settings, Smartphone } from 'lucide-react'
+import {
+  CalendarDays,
+  CircleHelp,
+  MessageCircle,
+  Newspaper,
+  PawPrint,
+  Settings,
+  Smartphone
+} from 'lucide-react'
 import type { AppIcon } from '../app/types'
 import { stickyNote } from './stickyNote'
 import { WeatherWidget } from './WeatherWidget'
@@ -40,18 +48,18 @@ const apps: AppIcon[] = [
     accent: 'moss'
   },
   {
-    id: 'note',
-    label: '便签',
-    description: '他留给你的话',
-    Icon: NotebookPen,
-    accent: 'cream'
-  },
-  {
     id: 'settings',
     label: '设置',
     description: 'DeepSeek API Key',
     Icon: Settings,
     accent: 'glass'
+  },
+  {
+    id: 'guide',
+    label: '使用说明',
+    description: '激活与 API Key 指南',
+    Icon: CircleHelp,
+    accent: 'guide'
   }
 ]
 
@@ -63,7 +71,8 @@ export function Desktop({
   openWeibo,
   openSettings,
   openHisPhone,
-  openNote
+  openNote,
+  openUsageGuide
 }: {
   ownerName: string
   openWechat: () => void
@@ -73,6 +82,7 @@ export function Desktop({
   openSettings: () => void
   openHisPhone: () => void
   openNote: () => void
+  openUsageGuide: () => void
 }) {
   return (
     <>
@@ -101,11 +111,11 @@ export function Desktop({
                   ? openWeibo
                 : id === 'settings'
                   ? openSettings
+                : id === 'guide'
+                  ? openUsageGuide
                   : id === 'his-phone'
                     ? openHisPhone
-                    : id === 'note'
-                      ? openNote
-                      : undefined
+                    : undefined
             }
           >
             <span className={`icon-glass ${accent}`}>
@@ -124,14 +134,6 @@ export function Desktop({
         <p>{stickyNote.preview}</p>
       </button>
 
-      <footer className="dock" aria-label="桌面 Dock">
-        <button type="button" aria-label="打开微信" onClick={openWechat}>
-          <MessageCircle size={25} strokeWidth={2.3} />
-        </button>
-        <button type="button" aria-label="打开设置" onClick={openSettings}>
-          <Settings size={25} strokeWidth={2.3} />
-        </button>
-      </footer>
     </>
   )
 }

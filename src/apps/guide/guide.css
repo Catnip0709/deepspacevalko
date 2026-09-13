@@ -1,0 +1,197 @@
+.guide-shell {
+  position: absolute;
+  z-index: 4;
+  inset: 48px 0 0;
+  display: grid;
+  grid-template-rows: 56px minmax(0, 1fr);
+  overflow: hidden;
+  color: var(--forest-900);
+  background:
+    linear-gradient(180deg, rgba(250, 253, 248, 0.98), rgba(235, 243, 232, 0.98));
+}
+
+.guide-content {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 18px 18px max(26px, env(safe-area-inset-bottom));
+}
+
+.guide-intro {
+  display: grid;
+  grid-template-columns: 46px minmax(0, 1fr);
+  gap: 12px;
+  padding: 5px 0 19px;
+  border-bottom: 1px solid rgba(31, 61, 43, 0.1);
+}
+
+.guide-intro > span {
+  width: 46px;
+  height: 46px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  color: #fff8ed;
+  background: linear-gradient(145deg, #3f7d4a, #7eaa70);
+}
+
+.guide-intro small,
+.guide-intro h3,
+.guide-intro p {
+  margin: 0;
+}
+
+.guide-intro small {
+  display: block;
+  color: rgba(31, 61, 43, 0.48);
+  font-size: 9px;
+  font-weight: 900;
+}
+
+.guide-intro h3 {
+  margin-top: 3px;
+  font-family: "Songti SC", "STSong", "Noto Serif CJK SC", serif;
+  font-size: 17px;
+  line-height: 1.45;
+}
+
+.guide-intro p {
+  grid-column: 1 / -1;
+  margin-top: 3px;
+  color: rgba(31, 61, 43, 0.66);
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+.guide-steps {
+  padding: 20px 0 2px;
+}
+
+.guide-steps > h3 {
+  margin: 0 0 15px;
+  color: rgba(31, 61, 43, 0.58);
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.guide-steps ol {
+  display: grid;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: guide-step;
+}
+
+.guide-steps li {
+  position: relative;
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr);
+  gap: 11px;
+  padding: 0 0 20px;
+  counter-increment: guide-step;
+}
+
+.guide-steps li:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  top: 36px;
+  bottom: 3px;
+  left: 18px;
+  width: 1px;
+  background: rgba(63, 125, 74, 0.17);
+}
+
+.guide-step-icon {
+  position: relative;
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(63, 125, 74, 0.15);
+  border-radius: 50%;
+  color: #426b4e;
+  background: #f8fbf6;
+}
+
+.guide-step-icon::after {
+  content: counter(guide-step);
+  position: absolute;
+  right: -3px;
+  bottom: -3px;
+  width: 16px;
+  height: 16px;
+  display: grid;
+  place-items: center;
+  border: 2px solid #f2f7f0;
+  border-radius: 50%;
+  color: white;
+  background: #b9674f;
+  font-size: 8px;
+  font-weight: 900;
+}
+
+.guide-steps strong {
+  font-size: 13px;
+}
+
+.guide-steps p {
+  margin: 4px 0 0;
+  color: rgba(31, 61, 43, 0.68);
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+.guide-steps a {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 2px;
+  margin: 0 3px;
+  color: #386c49;
+  font-weight: 900;
+  text-underline-offset: 2px;
+}
+
+.guide-steps a svg {
+  flex: 0 0 auto;
+}
+
+.guide-note {
+  padding: 12px 13px;
+  border-left: 3px solid #b9674f;
+  border-radius: 4px;
+  background: rgba(255, 247, 232, 0.8);
+}
+
+.guide-note strong {
+  font-size: 12px;
+}
+
+.guide-note p {
+  margin: 4px 0 0;
+  color: rgba(31, 61, 43, 0.66);
+  font-size: 11px;
+  line-height: 1.65;
+}
+
+.guide-settings {
+  width: 100%;
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  margin-top: 15px;
+  border: 0;
+  border-radius: 8px;
+  color: white;
+  background: #3f704b;
+  font-size: 13px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.guide-shell :focus-visible {
+  outline: 2px solid #b9674f;
+  outline-offset: 2px;
+}

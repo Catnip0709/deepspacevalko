@@ -5,6 +5,7 @@ import { StickyNoteModal } from '../desktop/StickyNoteModal'
 import { HisPhoneApp } from '../apps/his-phone/HisPhoneApp'
 import { PetApp } from '../apps/pet/PetApp'
 import { CalendarApp } from '../apps/calendar/CalendarApp'
+import { UsageGuideApp } from '../apps/guide/UsageGuideApp'
 import { WeiboApp } from '../apps/weibo/WeiboApp'
 import { SettingsApp } from '../apps/settings/SettingsApp'
 import { initialChatMessages } from '../apps/wechat/chatData'
@@ -536,6 +537,7 @@ export function App() {
           openSettings={openSettings}
           openHisPhone={openHisPhone}
           openNote={() => setIsNoteOpen(true)}
+          openUsageGuide={() => setScreen('guide')}
         />
       ) : null}
 
@@ -591,6 +593,10 @@ export function App() {
       {screen === 'weibo' ? (
         <WeiboApp onBackHome={returnHome} onOpenSettings={openSettings}
           apiKey={apiKey} model={selectedModel} persona={personaSettings} />
+      ) : null}
+
+      {screen === 'guide' ? (
+        <UsageGuideApp onBackHome={returnHome} onOpenSettings={openSettings} />
       ) : null}
 
       {isNoteOpen ? <StickyNoteModal onClose={() => setIsNoteOpen(false)} /> : null}

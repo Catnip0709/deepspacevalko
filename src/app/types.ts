@@ -1,6 +1,6 @@
 import type { LucideIcon } from 'lucide-react'
 
-export type Screen = 'desktop' | 'wechat' | 'weibo' | 'settings' | 'hisPhone' | 'pet' | 'calendar'
+export type Screen = 'desktop' | 'wechat' | 'weibo' | 'guide' | 'settings' | 'hisPhone' | 'pet' | 'calendar'
 export type WechatTab = 'chats' | 'moments'
 export type SettingsView = 'list' | 'unlock' | 'deepseek' | 'aoyinPersona' | 'hunterPersona'
 export type MomentAuthor = 'aoyin' | 'hunter'
@@ -70,7 +70,7 @@ export type Moment = {
 }
 
 export type AppIcon = {
-  id: Screen | 'his-phone' | 'note'
+  id: Screen | 'his-phone'
   label: string
   description: string
   Icon: LucideIcon
