@@ -1,4 +1,4 @@
-import { CalendarDays, MessageCircle, NotebookPen, PawPrint, Settings, Smartphone } from 'lucide-react'
+import { CalendarDays, MessageCircle, Newspaper, NotebookPen, PawPrint, Settings, Smartphone } from 'lucide-react'
 import type { AppIcon } from '../app/types'
 import { stickyNote } from './stickyNote'
 import { WeatherWidget } from './WeatherWidget'
@@ -24,6 +24,13 @@ const apps: AppIcon[] = [
     description: '日历与纪念日',
     Icon: CalendarDays,
     accent: 'cream'
+  },
+  {
+    id: 'weibo',
+    label: '微博',
+    description: '临空市热搜与微博',
+    Icon: Newspaper,
+    accent: 'weibo'
   },
   {
     id: 'his-phone',
@@ -53,6 +60,7 @@ export function Desktop({
   openWechat,
   openPet,
   openCalendar,
+  openWeibo,
   openSettings,
   openHisPhone,
   openNote
@@ -61,6 +69,7 @@ export function Desktop({
   openWechat: () => void
   openPet: () => void
   openCalendar: () => void
+  openWeibo: () => void
   openSettings: () => void
   openHisPhone: () => void
   openNote: () => void
@@ -88,6 +97,8 @@ export function Desktop({
                   ? openPet
                 : id === 'calendar'
                   ? openCalendar
+                : id === 'weibo'
+                  ? openWeibo
                 : id === 'settings'
                   ? openSettings
                   : id === 'his-phone'

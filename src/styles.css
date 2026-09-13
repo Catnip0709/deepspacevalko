@@ -425,6 +425,11 @@ select {
   background: linear-gradient(145deg, #76564a, #c27d61);
 }
 
+.icon-glass.weibo {
+  color: #fff8ed;
+  background: linear-gradient(145deg, #b84f45, #d98b55);
+}
+
 .icon-glass.moss {
   background: linear-gradient(145deg, rgba(45, 89, 64, 0.94), rgba(99, 134, 92, 0.88));
 }
