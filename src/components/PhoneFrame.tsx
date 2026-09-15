@@ -1,5 +1,4 @@
 import type { ReactNode } from 'react'
-import { StatusBar } from './StatusBar'
 
 export function PhoneFrame({ children }: { children: ReactNode }) {
   return (
@@ -9,7 +8,6 @@ export function PhoneFrame({ children }: { children: ReactNode }) {
           <div className="phone-screen">
             <div className="wallpaper-layer" />
             <div className="screen-vignette" />
-            <StatusBar />
             {children}
           </div>
         </div>

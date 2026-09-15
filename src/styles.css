@@ -86,6 +86,7 @@ select {
 }
 
 .phone-screen {
+  --phone-safe-top: 0px;
   position: relative;
   height: 100%;
   overflow: hidden;
@@ -151,83 +152,10 @@ select {
     radial-gradient(circle at 50% 108%, rgba(31, 61, 43, 0.34), transparent 30%);
 }
 
-.status-bar {
-  position: relative;
-  z-index: 2;
-  height: 48px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 24px;
-  font-size: 15px;
-  font-weight: 700;
-  color: rgba(31, 61, 43, 0.88);
-}
-
-.status-icons {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.signal-bars {
-  display: inline-flex;
-  align-items: end;
-  gap: 2px;
-  height: 14px;
-}
-
-.signal-bars i {
-  display: block;
-  width: 3px;
-  border-radius: 3px;
-  background: currentColor;
-}
-
-.signal-bars i:nth-child(1) {
-  height: 6px;
-}
-
-.signal-bars i:nth-child(2) {
-  height: 10px;
-}
-
-.signal-bars i:nth-child(3) {
-  height: 14px;
-}
-
-.battery {
-  position: relative;
-  width: 25px;
-  height: 13px;
-  display: inline-flex;
-  align-items: center;
-  padding: 2px;
-  border: 1.7px solid currentColor;
-  border-radius: 5px;
-}
-
-.battery::after {
-  content: "";
-  position: absolute;
-  right: -4px;
-  width: 2px;
-  height: 6px;
-  border-radius: 2px;
-  background: currentColor;
-}
-
-.battery span {
-  width: 74%;
-  height: 100%;
-  border-radius: 3px;
-  background: currentColor;
-}
-
 .desktop-copy {
   position: relative;
   z-index: 2;
-  padding: 10px 28px 0;
+  padding: calc(10px + var(--phone-safe-top)) 28px 0;
 }
 
 .desktop-copy p,
@@ -531,7 +459,7 @@ select {
 .wechat-shell {
   position: absolute;
   z-index: 4;
-  inset: 48px 0 0;
+  inset: var(--phone-safe-top) 0 0;
   display: grid;
   grid-template-rows: 56px 1fr 74px;
   overflow: hidden;
@@ -1228,7 +1156,7 @@ select {
 .his-phone-shell {
   position: absolute;
   z-index: 4;
-  inset: 48px 0 0;
+  inset: var(--phone-safe-top) 0 0;
   display: grid;
   grid-template-rows: 56px 1fr;
   overflow: hidden;
@@ -2092,7 +2020,7 @@ select {
 .pet-shell {
   position: absolute;
   z-index: 4;
-  inset: 48px 0 0;
+  inset: var(--phone-safe-top) 0 0;
   min-height: 0;
   display: grid;
   grid-template-rows: 58px minmax(0, 1fr);
@@ -2757,14 +2685,10 @@ select {
   }
 
   .phone-screen {
+    --phone-safe-top: env(safe-area-inset-top);
     min-height: 100vh;
     min-height: 100dvh;
     border-radius: 0;
-  }
-
-
-  .status-bar {
-    padding-top: env(safe-area-inset-top);
   }
 
   input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="button"]):not([type="submit"]):not([type="reset"]),
@@ -2773,6 +2697,62 @@ select {
     font-size: 16px !important;
   }
 
+}
+
+@media (max-width: 320px) {
+  .desktop-copy {
+    padding: calc(6px + var(--phone-safe-top)) 18px 0;
+  }
+
+  .weather-widget {
+    width: calc(100% - 28px);
+    min-height: 96px;
+    grid-template-columns: minmax(0, 1fr) 102px;
+    gap: 5px 8px;
+    margin: 10px 14px 0;
+    padding: 12px 13px 10px;
+  }
+
+  .weather-temp {
+    font-size: 36px;
+  }
+
+  .icon-grid {
+    gap: 10px 4px;
+    padding: 12px 14px 0;
+  }
+
+  .app-shortcut {
+    gap: 4px;
+  }
+
+  .icon-glass {
+    width: 50px;
+    height: 50px;
+    border-radius: 14px;
+  }
+
+  .app-label {
+    font-size: 11px;
+  }
+
+  .sticky-widget {
+    left: 14px;
+    right: 14px;
+    bottom: max(14px, env(safe-area-inset-bottom));
+    min-height: 0;
+    padding: 12px 14px;
+    border-radius: 20px;
+  }
+
+  .widget-header {
+    margin-bottom: 8px;
+  }
+
+  .sticky-widget p {
+    font-size: 16px;
+    line-height: 1.55;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

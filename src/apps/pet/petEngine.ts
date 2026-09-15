@@ -259,5 +259,5 @@ function prependLog(logs: PetCareLog[], log: PetCareLog) {
 }
 
 function clamp(value: number) {
-  return Math.max(0, Math.min(100, Math.round(value)))
+  return Math.max(0, Math.min(100, value))
 }

@@ -1,0 +1,13 @@
+{
+  "name": "Valkophone",
+  "short_name": "小手机",
+  "description": "猎人小姐的小手机",
+  "lang": "zh-CN",
+  "id": "./",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#d9ead9",
+  "theme_color": "#d9ead9"
+}

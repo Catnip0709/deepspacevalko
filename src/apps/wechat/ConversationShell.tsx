@@ -15,6 +15,7 @@ export function ConversationShell({
   onSendRedPacket,
   onEditLastUserMessage,
   onRegenerateLastAssistantMessage,
+  onRetryLastUserMessage,
   onOpenSettings
 }: {
   messages: ChatMessage[]
@@ -26,6 +27,7 @@ export function ConversationShell({
   onSendRedPacket: (amount: string, note?: string) => void
   onEditLastUserMessage: (messageId: string, text: string) => void
   onRegenerateLastAssistantMessage: (messageId: string) => void
+  onRetryLastUserMessage: (messageId: string) => void
   onOpenSettings: () => void
 }) {
   const [draft, setDraft] = useState('')
@@ -42,6 +44,7 @@ export function ConversationShell({
   const messagesScrollRef = useRef<HTMLDivElement | null>(null)
   const lastUserMessage = [...messages].reverse().find((message) => message.role === 'user')
   const lastAssistantMessage = [...messages].reverse().find((message) => message.role === 'assistant')
+  const lastMessage = messages[messages.length - 1]
   const isDraftEmpty = !draft.trim()
 
   const resizeTextarea = (textarea: HTMLTextAreaElement | null) => {
@@ -219,7 +222,21 @@ export function ConversationShell({
                   编辑
                 </button>
               ) : null}
-              {message.role === 'assistant' && message.id === lastAssistantMessage?.id ? (
+              {message.role === 'user' && message.id === lastMessage?.id ? (
+                <button
+                  className="message-inline-action"
+                  type="button"
+                  disabled={isChatting || !hasApiKey}
+                  onClick={() => onRetryLastUserMessage(message.id)}
+                  aria-label="重新发送最后一条未回复消息"
+                >
+                  <RefreshCw size={13} strokeWidth={2.4} />
+                  重试
+                </button>
+              ) : null}
+              {message.role === 'assistant' &&
+              message.id === lastAssistantMessage?.id &&
+              message.id === lastMessage?.id ? (
                 <button
                   className="message-inline-action"
                   type="button"

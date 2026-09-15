@@ -1,4 +1,12 @@
-import { ArrowLeft, ExternalLink, KeyRound, LockKeyhole, Settings, Smartphone } from 'lucide-react'
+import {
+  ArrowLeft,
+  Download,
+  ExternalLink,
+  KeyRound,
+  LockKeyhole,
+  Settings,
+  Smartphone
+} from 'lucide-react'
 import './guide.css'
 
 export function UsageGuideApp({
@@ -75,6 +83,30 @@ export function UsageGuideApp({
           <strong>激活码与 API Key 是两项独立配置</strong>
           <p>激活码用于解锁小手机内容；DeepSeek 余额用于支付聊天、评论和内容生成产生的模型费用。</p>
         </aside>
+
+        <section className="guide-install" aria-labelledby="guide-install-title">
+          <header>
+            <span aria-hidden="true"><Download size={19} /></span>
+            <div>
+              <small>推荐使用 Chrome 或 Safari</small>
+              <h3 id="guide-install-title">把小手机放到手机桌面</h3>
+            </div>
+          </header>
+          <p className="guide-install-lead">
+            添加后会像独立 App 一样从桌面打开，不显示浏览器地址栏，日常使用更方便。
+          </p>
+
+          <div className="guide-browser">
+            <ol>
+              <li>使用 Chrome 或 Safari 打开小手机网页</li>
+              <li>打开浏览器菜单，选择“添加到主屏幕”</li>
+              <li>修改名称后点击“添加”</li>
+            </ol>
+            <p>Chrome 从右上角“⋮”进入菜单；Safari 点击底部“分享”。</p>
+          </div>
+
+          <p className="guide-install-result">手机桌面出现图标后，点它就能直接进入小手机。</p>
+        </section>
 
         <button className="guide-settings" type="button" onClick={onOpenSettings}>
           <Settings size={17} />

@@ -311,20 +311,32 @@ export function App() {
       return
     }
 
-    setChatMessages((current) =>
-      current.map((message) =>
-        message.id === messageId
-          ? {
-              ...message,
-              type: 'text',
-              content: '',
-              location: undefined,
-              redPacket: undefined
-            }
-          : message
-      )
-    )
     void regenerateAssistantMessage(messagesForPrompt, messageId, chatMessages[assistantIndex])
+  }
+
+  const retryLastUserMessage = (messageId: string) => {
+    if (!apiKey) {
+      setChatError('请先到设置里填写 DeepSeek API Key。')
+      setScreen('settings')
+      return
+    }
+
+    const userIndex = chatMessages.findIndex((message) => message.id === messageId && message.role === 'user')
+
+    if (isChatting || userIndex !== chatMessages.length - 1) {
+      return
+    }
+
+    const assistantMessage: ChatMessage = {
+      id: createId('assistant-message'),
+      role: 'assistant',
+      type: 'text',
+      content: '',
+      createdAt: getCurrentTime()
+    }
+
+    setChatMessages([...chatMessages, assistantMessage])
+    void regenerateAssistantMessage(chatMessages, assistantMessage.id)
   }
 
   const clearChatMessages = () => {
@@ -420,8 +432,8 @@ export function App() {
 
   const publishMoment = async (text: string) => {
     if (!apiKey) {
-      setScreen('settings')
-      return
+      setMomentError('请先到设置里填写 DeepSeek API Key，再发布朋友圈。')
+      return false
     }
     const momentId = createId('hunter-moment')
     const replyId = createId('aoyin-reply')
@@ -444,23 +456,24 @@ export function App() {
 
     setMoments((current) => [newMoment, ...current])
 
-    await generateMomentReply({
+    void generateMomentReply({
       momentId,
       replyId,
       sourceAuthor: 'hunter',
       sourceText: text
     })
+    return true
   }
 
   const replyToMoment = async (momentId: string, text: string) => {
     if (!apiKey) {
-      setScreen('settings')
-      return
+      setMomentError('请先到设置里填写 DeepSeek API Key，再回复朋友圈。')
+      return false
     }
     const targetMoment = moments.find((moment) => moment.id === momentId)
 
     if (!targetMoment) {
-      return
+      return false
     }
 
     const replyId = createId('aoyin-reply')
@@ -489,13 +502,14 @@ export function App() {
       )
     )
 
-    await generateMomentReply({
+    void generateMomentReply({
       momentId,
       replyId,
       sourceAuthor: targetMoment.author,
       sourceText: targetMoment.text,
       hunterComment: text
     })
+    return true
   }
 
   const openWechat = () => {
@@ -563,6 +577,7 @@ export function App() {
           onSendRedPacketMessage={sendRedPacketMessage}
           onEditLastUserMessage={editLastUserMessage}
           onRegenerateLastAssistantMessage={regenerateLastAssistantMessage}
+          onRetryLastUserMessage={retryLastUserMessage}
           onClearChat={clearChatMessages}
           onOpenSettings={openSettings}
         />

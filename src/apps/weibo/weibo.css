@@ -1,7 +1,7 @@
 .weibo-shell {
   position: absolute;
   z-index: 4;
-  inset: 48px 0 0;
+  inset: var(--phone-safe-top) 0 0;
   display: grid;
   grid-template-rows: 56px minmax(0, 1fr) 68px;
   overflow: hidden;

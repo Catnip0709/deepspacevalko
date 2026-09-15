@@ -68,7 +68,7 @@ function normalizeLog(value: unknown): PetCareLog | null {
 
 function readStat(value: unknown, fallback: number) {
   return typeof value === 'number' && Number.isFinite(value)
-    ? Math.max(0, Math.min(100, Math.round(value)))
+    ? Math.max(0, Math.min(100, value))
     : fallback
 }
 

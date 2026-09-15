@@ -37,7 +37,7 @@ export function PetScene({ state, onPet }: { state: PetState; onPet: () => void 
             <div className="pet-stat" key={stat.key}>
               <div>
                 <span>{stat.label}</span>
-                <strong>{value}</strong>
+                <strong>{Math.round(value)}</strong>
               </div>
               <div className="pet-stat-track" aria-hidden="true">
                 <span style={{ width: `${value}%`, background: stat.color }} />

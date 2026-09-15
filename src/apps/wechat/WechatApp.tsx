@@ -24,6 +24,7 @@ export function WechatApp({
   onSendRedPacketMessage,
   onEditLastUserMessage,
   onRegenerateLastAssistantMessage,
+  onRetryLastUserMessage,
   onClearChat,
   onOpenSettings
 }: {
@@ -36,10 +37,10 @@ export function WechatApp({
   personaSettings: PersonaSettings
   onBackHome: () => void
   onChangeTab: (tab: WechatTab) => void
-  onPublishMoment: (text: string) => Promise<void>
+  onPublishMoment: (text: string) => Promise<boolean>
   onPublishAoyinMoment: () => Promise<void>
   isPostingMoment: boolean
-  onReplyToMoment: (momentId: string, text: string) => Promise<void>
+  onReplyToMoment: (momentId: string, text: string) => Promise<boolean>
   momentError: string
   replyingMomentIds: string[]
   onSendChatMessage: (text: string) => void
@@ -47,6 +48,7 @@ export function WechatApp({
   onSendRedPacketMessage: (amount: string, note?: string) => void
   onEditLastUserMessage: (messageId: string, text: string) => void
   onRegenerateLastAssistantMessage: (messageId: string) => void
+  onRetryLastUserMessage: (messageId: string) => void
   onClearChat: () => void
   onOpenSettings: () => void
 }) {
@@ -113,6 +115,7 @@ export function WechatApp({
             onSendRedPacket={onSendRedPacketMessage}
             onEditLastUserMessage={onEditLastUserMessage}
             onRegenerateLastAssistantMessage={onRegenerateLastAssistantMessage}
+            onRetryLastUserMessage={onRetryLastUserMessage}
             onOpenSettings={onOpenSettings}
           />
         ) : null}

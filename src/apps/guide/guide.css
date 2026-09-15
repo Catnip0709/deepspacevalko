@@ -1,7 +1,7 @@
 .guide-shell {
   position: absolute;
   z-index: 4;
-  inset: 48px 0 0;
+  inset: var(--phone-safe-top) 0 0;
   display: grid;
   grid-template-rows: 56px minmax(0, 1fr);
   overflow: hidden;
@@ -172,6 +172,94 @@
   color: rgba(31, 61, 43, 0.66);
   font-size: 11px;
   line-height: 1.65;
+}
+
+.guide-install {
+  margin-top: 20px;
+  padding-top: 19px;
+  border-top: 1px solid rgba(31, 61, 43, 0.1);
+}
+
+.guide-install > header {
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+}
+
+.guide-install > header > span {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  color: #fff9ec;
+  background: #b9674f;
+}
+
+.guide-install small,
+.guide-install h3,
+.guide-install p {
+  margin: 0;
+}
+
+.guide-install header small {
+  display: block;
+  color: rgba(31, 61, 43, 0.5);
+  font-size: 9px;
+  font-weight: 900;
+}
+
+.guide-install h3 {
+  margin-top: 2px;
+  font-family: "Songti SC", "STSong", "Noto Serif CJK SC", serif;
+  font-size: 16px;
+}
+
+.guide-install-lead {
+  margin-top: 11px !important;
+  color: rgba(31, 61, 43, 0.67);
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+.guide-browser {
+  display: grid;
+  gap: 10px;
+  padding: 15px 0;
+  border-bottom: 1px solid rgba(31, 61, 43, 0.09);
+}
+
+.guide-browser ol {
+  display: grid;
+  gap: 7px;
+  margin: 0;
+  padding-left: 19px;
+  color: rgba(31, 61, 43, 0.74);
+  font-size: 11px;
+  line-height: 1.55;
+}
+
+.guide-browser li::marker {
+  color: #b9674f;
+  font-weight: 900;
+}
+
+.guide-browser p {
+  padding: 8px 10px;
+  border-left: 2px solid rgba(63, 112, 75, 0.42);
+  color: rgba(31, 61, 43, 0.62);
+  background: rgba(255, 255, 255, 0.38);
+  font-size: 10px;
+  line-height: 1.55;
+}
+
+.guide-install-result {
+  margin-top: 11px !important;
+  color: #3f704b;
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1.6;
 }
 
 .guide-settings {

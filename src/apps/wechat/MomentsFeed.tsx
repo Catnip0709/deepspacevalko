@@ -16,8 +16,8 @@ export function MomentsFeed({
   momentError: string
   replyingMomentIds: string[]
   hunterName: string
-  onPublishMoment: (text: string) => Promise<void>
-  onReplyToMoment: (momentId: string, text: string) => Promise<void>
+  onPublishMoment: (text: string) => Promise<boolean>
+  onReplyToMoment: (momentId: string, text: string) => Promise<boolean>
 }) {
   const [draft, setDraft] = useState('')
   const [replyDrafts, setReplyDrafts] = useState<Record<string, string>>({})
@@ -27,7 +27,7 @@ export function MomentsFeed({
     feedRef.current?.scrollTo({ top: 0, behavior: 'smooth' })
   }, [firstId])
 
-  const submitMoment = (event: FormEvent<HTMLFormElement>) => {
+  const submitMoment = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     const text = draft.trim()
 
@@ -35,11 +35,12 @@ export function MomentsFeed({
       return
     }
 
-    void onPublishMoment(text)
-    setDraft('')
+    if (await onPublishMoment(text)) {
+      setDraft((current) => current.trim() === text ? '' : current)
+    }
   }
 
-  const submitReply = (event: FormEvent<HTMLFormElement>, momentId: string) => {
+  const submitReply = async (event: FormEvent<HTMLFormElement>, momentId: string) => {
     event.preventDefault()
     const text = replyDrafts[momentId]?.trim()
 
@@ -47,8 +48,12 @@ export function MomentsFeed({
       return
     }
 
-    void onReplyToMoment(momentId, text)
-    setReplyDrafts((current) => ({ ...current, [momentId]: '' }))
+    if (await onReplyToMoment(momentId, text)) {
+      setReplyDrafts((current) => ({
+        ...current,
+        [momentId]: current[momentId]?.trim() === text ? '' : current[momentId]
+      }))
+    }
   }
 
   return (
